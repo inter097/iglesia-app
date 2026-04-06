@@ -1,0 +1,59 @@
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #252525;
+  --border: #333;
+  --text: #f0f0f0;
+  --text2: #aaa;
+  --accent: #7c6af7;
+  --accent2: #5e4fcf;
+  --chord: #60c060;
+  --section: #f0a030;
+  --meta: #888;
+  --radius: 10px;
+}
+
+[data-theme="light"] {
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --bg3: #e8e8e8;
+  --border: #ddd;
+  --text: #111;
+  --text2: #555;
+  --accent: #5b4fd4;
+  --accent2: #4a3fc0;
+  --chord: #267326;
+  --section: #b35900;
+  --meta: #666;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  outline: none;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
