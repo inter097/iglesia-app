@@ -219,66 +219,7 @@ export default function SongPage() {
         }}>
           <ArrowLeft size={18} /> Volver
         </button>
-        <div className={styles.controls}>
-          {(hasChanges || saved) && (
-            <button className={`${styles.saveMetaBtn} ${saved ? styles.savedBtn : styles.pendingBtn}`} onClick={saveMeta} disabled={saving}>
-              {saved ? <><Check size={13} /> Guardado</> : saving ? 'Guardando...' : <><Check size={13} /> Guardar</>}
-            </button>
-          )}
-          <button
-            className={`${styles.toggle} ${showPanel ? styles.active : ''}`}
-            onClick={() => setShowPanel(v => !v)}
-            title="Controles"
-          >
-            <Settings2 size={16} />
-          </button>
-        </div>
       </div>
-
-      {showPanel && (
-        <div className={styles.controlsPanel}>
-          <button className={styles.ctrl} onClick={() => setFontSize(f => { const n = Math.max(11, f - 1); localStorage.setItem('song_fontSize', n); return n })}>A-</button>
-          <button className={styles.ctrl} onClick={() => setFontSize(f => { const n = Math.min(24, f + 1); localStorage.setItem('song_fontSize', n); return n })}>A+</button>
-
-          <button className={styles.ctrl} onClick={() => changeTranspose(transpose - 1)}><ChevronDown size={16} /></button>
-          <span className={styles.transposeVal}>{transpose > 0 ? `+${transpose}` : transpose === 0 ? '0' : transpose}</span>
-          <button className={styles.ctrl} onClick={() => changeTranspose(transpose + 1)}><ChevronUp size={16} /></button>
-
-          {!editMode && (
-            <button className={`${styles.toggle} ${showChords ? styles.active : ''}`} onClick={() => setShowChords(v => !v)}>
-              {showChords ? <Music2 size={15} /> : <AlignLeft size={15} />}
-              {showChords ? 'Acordes' : 'Letra'}
-            </button>
-          )}
-
-          <button className={`${styles.toggle} ${editMode ? styles.active : ''}`} onClick={() => setEditMode(v => !v)}>
-            {editMode ? <Eye size={15} /> : <Pencil size={15} />}
-            {editMode ? 'Ver' : 'Editar'}
-          </button>
-
-          <button
-            className={`${styles.toggle} ${isPractice ? styles.active : ''}`}
-            onClick={togglePractice}
-            title={isPractice ? 'Quitar de práctica' : 'Para practicar'}
-          >
-            <Bookmark size={15} />
-          </button>
-
-          <button
-            className={`${styles.toggle} ${song.has_error ? styles.active : ''}`}
-            onClick={toggleError}
-            style={song.has_error ? { background: '#e05555', borderColor: '#e05555', color: 'white' } : {}}
-          >
-            <AlertTriangle size={15} />
-          </button>
-
-          {!editMode && transpose !== 0 && (
-            <button className={styles.toggle} onClick={duplicateTransposed} disabled={duplicating}>
-              {duplicating ? 'Guardando...' : `Copiar en ${song.key ? transposeNote(song.key, transpose) : `${transpose > 0 ? '+' : ''}${transpose}`}`}
-            </button>
-          )}
-        </div>
-      )}
 
       <div className={styles.header}>
         <input
@@ -288,6 +229,7 @@ export default function SongPage() {
         />
 
         <div className={styles.metaRow}>
+          {/* Metadata */}
           <select
             className={`${styles.metaInput} ${!meta.key ? styles.empty : ''}`}
             value={meta.key}
@@ -329,6 +271,32 @@ export default function SongPage() {
             {bands.map(b => <option key={b} value={b} />)}
           </datalist>
 
+          {/* Separador visual */}
+          <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 6px' }} />
+
+          {/* Controles */}
+          <button className={styles.ctrl} onClick={() => setFontSize(f => { const n = Math.max(11, f - 1); localStorage.setItem('song_fontSize', n); return n })} title="Disminuir tamaño">A-</button>
+          <button className={styles.ctrl} onClick={() => setFontSize(f => { const n = Math.min(24, f + 1); localStorage.setItem('song_fontSize', n); return n })} title="Aumentar tamaño">A+</button>
+
+          <button className={styles.ctrl} onClick={() => changeTranspose(transpose - 1)} title="Bajar tono"><ChevronDown size={14} /></button>
+          <span className={styles.transposeVal}>{transpose > 0 ? `+${transpose}` : transpose === 0 ? '0' : transpose}</span>
+          <button className={styles.ctrl} onClick={() => changeTranspose(transpose + 1)} title="Subir tono"><ChevronUp size={14} /></button>
+
+          {!editMode && (
+            <button className={`${styles.toggle} ${showChords ? styles.active : ''}`} onClick={() => setShowChords(v => !v)} title="Mostrar/ocultar acordes">
+              {showChords ? <Music2 size={13} /> : <AlignLeft size={13} />}
+            </button>
+          )}
+
+          <button className={`${styles.toggle} ${editMode ? styles.active : ''}`} onClick={() => setEditMode(v => !v)} title="Editar letra">
+            {editMode ? <Eye size={13} /> : <Pencil size={13} />}
+          </button>
+
+          {(hasChanges || saved) && (
+            <button className={`${styles.saveMetaBtn} ${saved ? styles.savedBtn : styles.pendingBtn}`} onClick={saveMeta} disabled={saving}>
+              {saved ? <Check size={12} /> : <Check size={12} />}
+            </button>
+          )}
         </div>
       </div>
 

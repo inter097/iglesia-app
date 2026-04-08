@@ -17,12 +17,13 @@
   flex-wrap: wrap;
   gap: 10px;
   margin: 0 -16px 20px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   position: sticky;
   top: 46px;
   z-index: 50;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  border-bottom: 2px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .back {
@@ -120,23 +121,73 @@
 .metaRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
+  margin-top: 10px;
 }
 
 .metaInput {
-  padding: 5px 9px;
+  padding: 5px 8px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   font-family: inherit;
 }
 .metaInput:focus { border-color: var(--accent); outline: none; }
 .metaInput.empty {
   border-style: dashed;
   color: var(--text2);
+}
+
+.ctrl {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.ctrl:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
+.transposeVal {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 18px;
+  text-align: center;
+  padding: 0 3px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.toggle:hover {
+  background: var(--border);
+  color: var(--text);
+}
+.toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
 
 .saveMetaBtn {
