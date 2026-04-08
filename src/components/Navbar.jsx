@@ -4,6 +4,21 @@ import { supabase } from '../lib/supabase'
 import { useEffect, useState, useRef } from 'react'
 import styles from './Navbar.module.css'
 
+const DAYS = [
+  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'sabado',    label: 'Sábado'    },
+  { key: 'domingo',   label: 'Domingo'   },
+]
+
+function getDefaultDay() {
+  const today = new Date().getDay()
+  if (today === 3) return 'miercoles'
+  if (today === 4 || today === 5) return 'sabado'
+  if (today === 6) return 'sabado'
+  if (today === 0) return 'domingo'
+  return 'miercoles'
+}
+
 export default function Navbar({ theme, toggleTheme }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -12,6 +27,18 @@ export default function Navbar({ theme, toggleTheme }) {
   const menuRef = useRef(null)
   const isHome = location.pathname === '/' || location.pathname.startsWith('/repertorio')
   const isCanciones = location.pathname === '/canciones'
+
+  const [selectedDay, setSelectedDay] = useState(
+    () => localStorage.getItem('repertorio_day') || getDefaultDay()
+  )
+
+  useEffect(() => {
+    const dayFromUrl = location.pathname.split('/repertorio/')[1]
+    if (dayFromUrl && DAYS.find(d => d.key === dayFromUrl)) {
+      setSelectedDay(dayFromUrl)
+      localStorage.setItem('repertorio_day', dayFromUrl)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -28,14 +55,25 @@ export default function Navbar({ theme, toggleTheme }) {
     else navigate('/')
   }
 
+  function cycleDay() {
+    const currentIdx = DAYS.findIndex(d => d.key === selectedDay)
+    const nextIdx = (currentIdx + 1) % DAYS.length
+    const newDay = DAYS[nextIdx].key
+    localStorage.setItem('repertorio_day', newDay)
+    navigate(`/repertorio/${newDay}`)
+  }
+
+  const currentDayLabel = DAYS.find(d => d.key === selectedDay)?.label || 'Día'
+
   useEffect(() => {
-    function handleClickOutside(e) {
+    if (!menuOpen) return
+    const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false)
       }
     }
-    if (menuOpen) document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [menuOpen])
 
   return (
@@ -44,8 +82,14 @@ export default function Navbar({ theme, toggleTheme }) {
         {isHome ? <BookOpen size={22} /> : <Home size={22} />}
       </button>
 
-      <div className={styles.menu} ref={menuRef}>
-        <button onClick={() => setMenuOpen(v => !v)} className={styles.menuBtn} title="Menú">
+      {isHome && (
+        <button onClick={cycleDay} className={styles.dayBtn} title="Cambiar día">
+          {currentDayLabel}
+        </button>
+      )}
+
+      <div className={styles.menu} ref={menuRef} onClick={e => e.stopPropagation()}>
+        <button onClick={e => { e.stopPropagation(); setMenuOpen(v => !v) }} className={styles.menuBtn} title="Menú">
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 

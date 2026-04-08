@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2 } from 'lucide-react'
+import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { transposeLine, transposeNote } from '../lib/chords'
 import { getCachedSong, updateCachedSong } from '../lib/songCache'
@@ -219,16 +219,24 @@ export default function SongPage() {
         }}>
           <ArrowLeft size={18} /> Volver
         </button>
+        <button
+          className={`${styles.infoPanelBtn} ${showPanel ? styles.active : ''}`}
+          onClick={() => setShowPanel(v => !v)}
+          title="Información de la canción"
+        >
+          <Info size={18} />
+        </button>
       </div>
 
-      <div className={styles.header}>
-        <input
-          className={styles.titleInput}
-          value={meta.title ?? song.title}
-          onChange={e => setMeta(m => ({ ...m, title: e.target.value }))}
-        />
+      {showPanel && (
+        <div className={styles.infoPanel}>
+          <input
+            className={styles.titleInput}
+            value={meta.title ?? song.title}
+            onChange={e => setMeta(m => ({ ...m, title: e.target.value }))}
+          />
 
-        <div className={styles.metaRow}>
+          <div className={styles.metaRow}>
           {/* Metadata */}
           <select
             className={`${styles.metaInput} ${!meta.key ? styles.empty : ''}`}
@@ -297,8 +305,9 @@ export default function SongPage() {
               {saved ? <Check size={12} /> : <Check size={12} />}
             </button>
           )}
+          </div>
         </div>
-      </div>
+      )}
 
       {contentLoading ? (
         <div className={styles.loading}>Cargando letra...</div>

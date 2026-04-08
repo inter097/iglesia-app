@@ -16,7 +16,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 0 -16px 20px;
+  margin: 0 -16px 0;
   padding: 12px 16px;
   position: sticky;
   top: 46px;
@@ -35,6 +35,47 @@
   transition: color 0.2s;
 }
 .back:hover { color: var(--text); }
+
+.infoPanelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg3);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.infoPanelBtn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+.infoPanelBtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.infoPanel {
+  margin: 0 -16px 20px;
+  padding: 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .controls {
   display: flex;
@@ -101,7 +142,7 @@
 }
 
 .titleInput {
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
   background: transparent;
@@ -116,6 +157,11 @@
 .titleInput:focus {
   outline: none;
   border-bottom-color: var(--accent);
+}
+
+.infoPanel .titleInput {
+  font-size: 18px;
+  margin-bottom: 10px;
 }
 
 .metaRow {
@@ -215,7 +261,7 @@
 .content {
   font-family: 'Courier New', 'Consolas', monospace;
   line-height: 1.6;
-  padding-bottom: 120px;
+  padding: 20px 0 120px;
 }
 
 .section {
@@ -259,6 +305,7 @@
   resize: vertical;
   white-space: pre;
   overflow-x: auto;
+  margin-top: 20px;
 }
 .editArea:focus { outline: none; border-color: var(--accent); }
 

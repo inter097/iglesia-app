@@ -12,11 +12,28 @@ const DAYS = [
   { key: 'domingo',   label: 'Domingo'   },
 ]
 
+function getDefaultDay() {
+  const today = new Date().getDay()
+  if (today === 3) return 'miercoles'
+  if (today === 4 || today === 5) return 'sabado'
+  if (today === 6) return 'sabado'
+  if (today === 0) return 'domingo'
+  return 'miercoles'
+}
+
 export default function SetlistPage() {
   const { day: dayParam } = useParams()
   const [selectedDay, setSelectedDay] = useState(
-    () => dayParam || localStorage.getItem('repertorio_day') || null
+    () => dayParam || localStorage.getItem('repertorio_day') || getDefaultDay()
   )
+
+  // Actualizar cuando cambia el día en la URL
+  useEffect(() => {
+    if (dayParam && DAYS.find(d => d.key === dayParam)) {
+      setSelectedDay(dayParam)
+      localStorage.setItem('repertorio_day', dayParam)
+    }
+  }, [dayParam])
   const [setlists, setSetlists]   = useState({})
   const [allSongs, setAllSongs]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -189,23 +206,6 @@ export default function SetlistPage() {
 
   return (
     <div className={styles.container}>
-
-      {/* Selector de día */}
-      <div className={styles.daySelector}>
-        {DAYS.map(({ key, label }) => {
-          const count = setlists[key]?.songs?.length ?? 0
-          return (
-            <button
-              key={key}
-              className={`${styles.dayBtn} ${selectedDay === key ? styles.dayActive : ''}`}
-              onClick={() => selectDay(key)}
-            >
-              <span className={styles.dayLabel}>{label}</span>
-              <span className={styles.dayCount}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
 
 {/* Contenido del día seleccionado */}
       {!selectedDay ? (

@@ -33,6 +33,24 @@
   transform: scale(1.05);
 }
 
+.dayBtn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0 4px;
+  transition: all 0.2s;
+}
+.dayBtn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
 .menuBtn {
   display: flex;
   align-items: center;
