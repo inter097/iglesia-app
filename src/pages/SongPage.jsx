@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { transposeLine, transposeNote } from '../lib/chords'
+import { transposeLine, transposeNote, isChordLine } from '../lib/chords'
 import { getCachedSong, updateCachedSong } from '../lib/songCache'
 import { InfoPanelContext } from '../lib/infoPanelContext'
 import styles from './SongPage.module.css'
@@ -175,7 +175,7 @@ export default function SongPage() {
           const trimmed = line.trim()
           if (!trimmed) return line
           if (/^(INTRO|VERSO|PRE|CORO|PUENTE|OUTRO|BRIDGE|CHORUS|VERSE|ESTROFA|FINAL|FIN)/i.test(trimmed)) return line
-          if (isChords(trimmed)) return transposeLine(line, transpose)
+          if (isChordLine(trimmed)) return transposeLine(line, transpose)
           return line
         }).join('\n')
       : ''
@@ -235,6 +235,7 @@ export default function SongPage() {
     try {
       sessionStorage.removeItem('home_songs')
       sessionStorage.removeItem('home_songs_content')
+      sessionStorage.removeItem('setlist_cache')
       setSaving(true)
       const { error } = await supabase.from('songs').update({
         title: meta.title || song.title,
@@ -251,6 +252,7 @@ export default function SongPage() {
       setSaved(true)
       setSong(s => ({ ...s, ...meta, content: editContent }))
       setOriginalMeta({ ...meta })
+      updateCachedSong(id, { ...meta, content: editContent })
       setEditMode(false)
       setShowPanel(false)
       setTimeout(() => setSaved(false), 2000)
@@ -302,9 +304,9 @@ export default function SongPage() {
     }
 
     // Check if chord line (heuristic: mostly chord tokens)
-    const isChordLine = isChords(trimmed)
+    const isChordLineResult = isChordLine(trimmed)
 
-    if (isChordLine) {
+    if (isChordLineResult) {
       if (!showChords) return null
       const transposed = transpose !== 0 ? transposeLine(line, transpose) : line
       return <div key={index} className={styles.chordLine} style={{ fontSize }}>{transposed}</div>
@@ -462,7 +464,7 @@ export default function SongPage() {
               if (/^(INTRO|VERSO|PRE|CORO|PUENTE|OUTRO|BRIDGE|CHORUS|VERSE|ESTROFA|FINAL|FIN)/i.test(trimmed)) {
                 return <div key={i} className={styles.presentationSection}>{trimmed}</div>
               }
-              if (isChords(trimmed)) return null
+              if (isChordLine(trimmed)) return null
               return <div key={i} className={styles.presentationLyric}>{trimmed}</div>
             })}
           </div>
@@ -472,22 +474,4 @@ export default function SongPage() {
   )
 }
 
-function isChords(line) {
-  if (!line.match(/[A-G]/)) return false
-  // Quitar anotaciones entre paréntesis, números sueltos tipo "x4", guiones y palabras técnicas
-  const cleaned = line
-    .replace(/\(.*?\)/g, '')        // ( se prende ), ( silencio )
-    .replace(/\bx\d+\b/gi, '')      // x4, x2
-    .replace(/\bpad\b/gi, '')
-    .replace(/\bsilencio\b/gi, '')
-    .replace(/(\s|^)-+(\s|$)/g, ' ') // guiones aislados tipo " - "
-    .trim()
-  if (!cleaned) return false
-  const tokens = cleaned.split(/\s+/).filter(Boolean)
-  const chordCount = tokens.filter(t => {
-    // Permitir dígito prefijo: "3F#" → "F#", "4Eb" → "Eb"
-    const stripped = t.replace(/^\d+/, '')
-    return /^[A-G][#b]?(m|maj|min|dim|aug|sus|add|\d+)*(\/[A-G][#b]?)?$/.test(stripped)
-  }).length
-  return chordCount > 0 && chordCount >= tokens.length * 0.4
-}
+// Use isChordLine from lib/chords instead

@@ -46,6 +46,8 @@ export default function SetlistPage() {
   const navigate = useNavigate()
   const [search, setSearch]       = useState('')
 
+  const currentSongs = selectedDay ? (setlists[selectedDay]?.songs || []) : []
+
   useEffect(() => {
     fetchAll()
   }, [])
@@ -125,10 +127,15 @@ export default function SetlistPage() {
     }))
   }
 
+  function getMaxPosition(songs) {
+    if (!songs || songs.length === 0) return -1
+    return Math.max(...songs.map(s => s.position ?? -1))
+  }
+
   async function addSong(song) {
     const sl = setlists[selectedDay]
     if (!sl) return
-    const maxPos = sl.songs.length ? Math.max(...sl.songs.map(s => s.position)) : -1
+    const maxPos = getMaxPosition(sl.songs)
     setSearch('')
     setAdding(false)
     const { error } = await supabase.from('setlist_songs').insert({
@@ -202,8 +209,6 @@ export default function SetlistPage() {
     s.title.toLowerCase().includes(search.toLowerCase())
   )
 
-  const currentSongs = selectedDay ? (setlists[selectedDay]?.songs || []) : []
-
   return (
     <div className={styles.container}>
 
@@ -239,7 +244,7 @@ export default function SetlistPage() {
               onTouchStart={e => handleTouchStart(e, i)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              onClick={() => { if (didDragRef.current) return; navigate(`/cancion/${item.song.id}?ssl=${item.id}&t=${item.transpose || 0}`, { state: { song: item.song } }) }}
+              onClick={() => { if (didDragRef.current) return; sessionStorage.setItem('setlist_day', selectedDay); navigate(`/cancion/${item.song.id}?ssl=${item.id}&t=${item.transpose || 0}`, { state: { song: item.song } }) }}
             >
 <div className={styles.itemNum}>{i + 1}</div>
               <div className={styles.itemInfo}>

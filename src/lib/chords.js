@@ -36,3 +36,22 @@ export function transposeLine(line, semitones) {
     return transposeChord(chord, semitones)
   })
 }
+
+// Detect if a line contains chords
+export function isChordLine(line) {
+  if (!line.match(/[A-G]/)) return false
+  const cleaned = line
+    .replace(/\(.*?\)/g, '')        // Remover parentéticos
+    .replace(/\bx\d+\b/gi, '')      // Remover x4, x2
+    .replace(/\bpad\b/gi, '')
+    .replace(/\bsilencio\b/gi, '')
+    .replace(/(\s|^)-+(\s|$)/g, ' ')
+    .trim()
+  if (!cleaned) return false
+  const tokens = cleaned.split(/\s+/).filter(Boolean)
+  const chordCount = tokens.filter(t => {
+    const stripped = t.replace(/^\d+/, '')
+    return /^[A-G][#b]?(m|maj|min|dim|aug|sus|add|\d+)*(\/[A-G][#b]?)?$/.test(stripped)
+  }).length
+  return chordCount > 0 && chordCount >= tokens.length * 0.4
+}

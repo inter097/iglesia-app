@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Music, Zap, Minus, Waves, Pencil, X, Check, FilterX, AlertTriangle, Bookmark } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -29,6 +29,7 @@ export default function Home() {
     try { return new Set(JSON.parse(localStorage.getItem('practice_list') || '[]')) }
     catch { return new Set() }
   })
+  const abortControllerRef = useRef(null)
 
   useEffect(() => { fetchSongs(searchContent) }, [])
   useEffect(() => { sessionStorage.setItem('h_search', search) }, [search])
@@ -41,6 +42,13 @@ export default function Home() {
   }, [searchContent])
 
   async function fetchSongs(withContent = false) {
+    // Cancel previous request if still pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    abortControllerRef.current = new AbortController()
+
     setError(null)
     const cacheKey = withContent ? 'home_songs_content' : 'home_songs'
     const cached = sessionStorage.getItem(cacheKey)
@@ -62,7 +70,11 @@ export default function Home() {
       if (error) throw error
       setSongs(data || [])
       sessionStorage.setItem(cacheKey, JSON.stringify(data || []))
-    } catch {
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('[Home] Request cancelled')
+        return
+      }
       if (!cached) setError('Error al cargar. Intenta recargar la página.')
     } finally {
       setLoading(false)

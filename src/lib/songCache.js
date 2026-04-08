@@ -8,9 +8,15 @@ export function getCachedSong(id) {
 
 export function prefetchSong(id) {
   if (cache.has(id)) return  // ya está cacheada
-  supabase.from('songs').select('*').eq('id', id).single().then(({ data }) => {
-    if (data) cache.set(id, data)
-  })
+  supabase.from('songs').select('*').eq('id', id).single()
+    .then(({ data, error }) => {
+      if (error) {
+        console.warn(`[songCache] Failed to prefetch song ${id}:`, error.message)
+        return
+      }
+      if (data) cache.set(id, data)
+    })
+    .catch(err => console.error(`[songCache] Unexpected error prefetching ${id}:`, err))
 }
 
 export function updateCachedSong(id, partial) {
