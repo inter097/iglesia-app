@@ -19,13 +19,23 @@
   transform: translateX(-50%);
 }
 
-.logo {
+.toggleBtn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
   font-weight: 600;
   font-size: 18px;
-  color: var(--accent);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.toggleBtn:hover {
+  background: var(--accent2);
+  transform: scale(1.05);
 }
 
 .actions {

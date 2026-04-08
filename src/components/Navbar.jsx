@@ -1,11 +1,15 @@
-import { Link } from 'react-router-dom'
-import { Sun, Moon, Music2, Shield, BookOpen, Wrench, Home, Tag, BarChart2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useEffect, useState } from 'react'
 import styles from './Navbar.module.css'
 
 export default function Navbar({ theme, toggleTheme }) {
   const [isAdmin, setIsAdmin] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isHome = location.pathname === '/' || location.pathname.startsWith('/repertorio')
+  const isCanciones = location.pathname === '/canciones'
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -17,20 +21,18 @@ export default function Navbar({ theme, toggleTheme }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+  function toggleView() {
+    if (isHome) navigate('/canciones')
+    else navigate('/')
+  }
+
   return (
     <nav className={styles.nav}>
-      <Link to="/" className={styles.logo}>
-        <Music2 size={22} />
-        <span>AFC</span>
-      </Link>
+      <button onClick={toggleView} className={styles.toggleBtn} title={isHome ? 'Ir a Canciones' : 'Ir a Repertorio'}>
+        {isHome ? <BookOpen size={22} /> : <Home size={22} />}
+      </button>
 
       <div className={styles.center}>
-        <Link to="/" className={styles.iconBtn} title="Repertorio">
-          <Home size={18} />
-        </Link>
-        <Link to="/canciones" className={styles.iconBtn} title="Canciones">
-          <BookOpen size={18} />
-        </Link>
         <Link to="/estadisticas" className={styles.iconBtn} title="Estadísticas">
           <BarChart2 size={18} />
         </Link>
