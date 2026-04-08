@@ -32,7 +32,7 @@ export default function SongPage() {
   const [bands, setBands] = useState([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [editMode, setEditMode] = useState(true)
+  const [editMode, setEditMode] = useState(false)
   const [editContent, setEditContent] = useState('')
   const [originalMeta, setOriginalMeta] = useState(seedMeta)
   const [presentationMode, setPresentationMode] = useState(false)
@@ -305,7 +305,14 @@ export default function SongPage() {
           spellCheck={false}
         />
       ) : (
-        <div className={styles.content}>
+        <div
+          className={styles.content}
+          onDoubleClick={() => {
+            setEditMode(true)
+            setShowPanel(true)
+          }}
+          title="Double-click para editar"
+        >
           {lines.map((line, i) => renderLine(line, i))}
         </div>
       )}
