@@ -1,13 +1,15 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2 } from 'lucide-react'
+import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import styles from './Navbar.module.css'
 
 export default function Navbar({ theme, toggleTheme }) {
   const [isAdmin, setIsAdmin] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const menuRef = useRef(null)
   const isHome = location.pathname === '/' || location.pathname.startsWith('/repertorio')
   const isCanciones = location.pathname === '/canciones'
 
@@ -26,36 +28,53 @@ export default function Navbar({ theme, toggleTheme }) {
     else navigate('/')
   }
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [menuOpen])
+
   return (
     <nav className={styles.nav}>
       <button onClick={toggleView} className={styles.toggleBtn} title={isHome ? 'Ir a Canciones' : 'Ir a Repertorio'}>
         {isHome ? <BookOpen size={22} /> : <Home size={22} />}
       </button>
 
-      <div className={styles.center}>
-        <Link to="/estadisticas" className={styles.iconBtn} title="Estadísticas">
-          <BarChart2 size={18} />
-        </Link>
-      </div>
-
-      <div className={styles.actions}>
-        <Link to="/asignar-bandas" className={styles.iconBtn} title="Asignar bandas">
-          <Tag size={18} />
-        </Link>
-        <Link to="/dev" className={styles.iconBtn} title="Dev">
-          <Wrench size={18} />
-        </Link>
-        <button onClick={toggleTheme} className={styles.iconBtn} title="Cambiar tema">
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      <div className={styles.menu} ref={menuRef}>
+        <button onClick={() => setMenuOpen(v => !v)} className={styles.menuBtn} title="Menú">
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-        {isAdmin ? (
-          <Link to="/admin" className={styles.adminBtn}>
-            <Shield size={16} /> Admin
-          </Link>
-        ) : (
-          <Link to="/login" className={styles.iconBtn} title="Admin">
-            <Shield size={18} />
-          </Link>
+
+        {menuOpen && (
+          <div className={styles.menuDropdown}>
+            <Link to="/estadisticas" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+              <BarChart2 size={16} /> Estadísticas
+            </Link>
+            <Link to="/asignar-bandas" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+              <Tag size={16} /> Asignar bandas
+            </Link>
+            <Link to="/dev" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+              <Wrench size={16} /> Dev
+            </Link>
+            <button onClick={() => { toggleTheme(); setMenuOpen(false) }} className={styles.menuItem}>
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+            </button>
+            <hr className={styles.menuDivider} />
+            {isAdmin ? (
+              <Link to="/admin" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+                <Shield size={16} /> Admin
+              </Link>
+            ) : (
+              <Link to="/login" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+                <Shield size={16} /> Login
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </nav>
