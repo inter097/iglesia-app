@@ -406,10 +406,10 @@ export default function SongPage() {
           </div>
 
           {(prevSong || nextSong) && (
-            <div className={styles.navigationButtons}>
+            <div className={navigationButtons}>
               {prevSong ? (
                 <button
-                  className={styles.navBtn}
+                  className={navBtn}
                   onClick={() => { sessionStorage.setItem('setlist_day', sessionStorage.getItem('setlist_day')); navigate(`/cancion/${prevSong.song.id}?ssl=${prevSong.id}&t=${prevSong.transpose || 0}`, { state: { song: prevSong.song }, replace: true }) }}
                   title="Anterior"
                 >
@@ -417,7 +417,7 @@ export default function SongPage() {
                 </button>
               ) : (
                 <button
-                  className={styles.navMarker}
+                  className={navMarker}
                   onClick={() => navigate('/repertorio')}
                   title="Volver a playlist"
                 >
@@ -427,7 +427,7 @@ export default function SongPage() {
 
               {nextSong ? (
                 <button
-                  className={styles.navBtn}
+                  className={navBtn}
                   onClick={() => { sessionStorage.setItem('setlist_day', sessionStorage.getItem('setlist_day')); navigate(`/cancion/${nextSong.song.id}?ssl=${nextSong.id}&t=${nextSong.transpose || 0}`, { state: { song: nextSong.song }, replace: true }) }}
                   title="Siguiente"
                 >
@@ -435,7 +435,7 @@ export default function SongPage() {
                 </button>
               ) : (
                 <button
-                  className={styles.navMarker}
+                  className={navMarker}
                   onClick={() => navigate('/repertorio')}
                   title="Volver a playlist"
                 >
