@@ -29,7 +29,7 @@ export default function Navbar({ theme, toggleTheme }) {
   const isHome = location.pathname === '/' || location.pathname.startsWith('/repertorio')
   const isCanciones = location.pathname === '/canciones'
   const isSongPage = location.pathname.startsWith('/cancion/')
-  const { showPanel, setShowPanel } = useContext(InfoPanelContext)
+  const { showPanel, setShowPanel, songTitle, songBand, devMode, toggleDevMode, hasUnsavedChanges, saveMeta } = useContext(InfoPanelContext)
 
   const [selectedDay, setSelectedDay] = useState(
     () => localStorage.getItem('repertorio_day') || getDefaultDay()
@@ -69,12 +69,14 @@ export default function Navbar({ theme, toggleTheme }) {
   const currentDayLabel = DAYS.find(d => d.key === selectedDay)?.label || 'Día'
 
   useEffect(() => {
-    if (!menuOpen) return
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false)
       }
     }
+
+    if (!menuOpen) return
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [menuOpen])
@@ -82,7 +84,19 @@ export default function Navbar({ theme, toggleTheme }) {
   return (
     <nav className={styles.nav}>
       {isSongPage ? (
-        <button onClick={() => navigate(-1)} className={styles.backBtn} title="Volver">
+        <button
+          onClick={() => {
+            setShowPanel(false)
+            const params = new URLSearchParams(location.search)
+            if (params.get('ssl')) {
+              window.location.href = '/repertorio'
+            } else {
+              navigate(-1)
+            }
+          }}
+          className={styles.backBtn}
+          title="Volver"
+        >
           <ArrowLeft size={22} />
         </button>
       ) : (
@@ -97,11 +111,24 @@ export default function Navbar({ theme, toggleTheme }) {
         </button>
       )}
 
+      {isSongPage && (
+        <div className={styles.songInfo}>
+          <div className={styles.songTitle}>{songTitle}</div>
+          {songBand && <div className={styles.songBand}>{songBand}</div>}
+        </div>
+      )}
+
       {isSongPage ? (
         <button
-          className={`${styles.infoBtnNav} ${showPanel ? styles.active : ''}`}
-          onClick={() => setShowPanel(v => !v)}
-          title="Información de la canción"
+          className={`${styles.infoBtnNav} ${showPanel ? styles.active : ''} ${hasUnsavedChanges ? styles.unsaved : ''}`}
+          onClick={() => {
+            if (hasUnsavedChanges && saveMeta) {
+              saveMeta()
+            } else {
+              setShowPanel(v => !v)
+            }
+          }}
+          title={hasUnsavedChanges ? "Guardar cambios" : "Información de la canción"}
         >
           <Info size={20} />
         </button>
@@ -119,9 +146,9 @@ export default function Navbar({ theme, toggleTheme }) {
               <Link to="/asignar-bandas" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
                 <Tag size={16} /> Asignar bandas
               </Link>
-              <Link to="/dev" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
-                <Wrench size={16} /> Dev
-              </Link>
+              <button onClick={() => { toggleDevMode(!devMode); setMenuOpen(false) }} className={styles.menuItem} title="Toggle doble-click editar">
+                <Wrench size={16} /> Dev {devMode ? '✓' : ''}
+              </button>
               <button onClick={() => { toggleTheme(); setMenuOpen(false) }} className={styles.menuItem}>
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                 {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -37,40 +37,127 @@ export default function SongPage() {
   const [originalMeta, setOriginalMeta] = useState(seedMeta)
   const [presentationMode, setPresentationMode] = useState(false)
   const [duplicating, setDuplicating] = useState(false)
-  const { showPanel, setShowPanel } = useContext(InfoPanelContext)
+  const { showPanel, setShowPanel, setSongTitle, setSongBand, devMode, editMode: contextEditMode, setEditMode: setContextEditMode, hasUnsavedChanges, setHasUnsavedChanges, setSaveMeta } = useContext(InfoPanelContext)
   const [isPractice, setIsPractice] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('practice_list') || '[]')).has(id) }
     catch { return false }
   })
+  const [nextSong, setNextSong] = useState(null)
+  const [prevSong, setPrevSong] = useState(null)
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    window.scrollTo(0, 0)
+    setNextSong(null)
+    setPrevSong(null)
+    setShowPanel(false)
     fetchSong()
     fetchBands()
+
+    // En background, actualiza si hay cambios
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) {
+        fetchSong(true)
+      }
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
   }, [id])
 
-  async function fetchSong() {
+  useEffect(() => {
+    loadSetlistNavigation()
+  }, [id, setlistSongId])
+
+  function loadSetlistNavigation() {
+    if (!setlistSongId) return
+    try {
+      const cached = sessionStorage.getItem('setlist_cache')
+      const day = sessionStorage.getItem('setlist_day')
+      if (!cached || !day) return
+
+      let data
+      try {
+        data = JSON.parse(cached)
+      } catch (e) {
+        console.warn('[SongPage] Cache corrupted, cannot parse JSON:', e.message)
+        return
+      }
+
+      if (!data.setlists || typeof data.setlists !== 'object') {
+        console.warn('[SongPage] Cache missing .setlists property')
+        return
+      }
+
+      const currentSetlist = data.setlists[day]
+      if (!currentSetlist) {
+        console.warn(`[SongPage] No setlist found for day: ${day}`)
+        return
+      }
+
+      const songs = currentSetlist.songs || []
+      const currentIdx = songs.findIndex(s => s.id === setlistSongId)
+      if (currentIdx === -1) {
+        console.warn(`[SongPage] Song ${setlistSongId} not found in setlist for ${day}`)
+        return
+      }
+
+      if (currentIdx > 0) setPrevSong(songs[currentIdx - 1])
+      if (currentIdx < songs.length - 1) setNextSong(songs[currentIdx + 1])
+    } catch (e) {
+      console.error('[SongPage] Unexpected error in loadSetlistNavigation:', e)
+    }
+  }
+
+  useEffect(() => {
+    if (song) {
+      setSongTitle(song.title || '')
+      setSongBand(song.band || '')
+    }
+    return () => {
+      setSongTitle('')
+      setSongBand('')
+    }
+  }, [song])
+
+  async function fetchSong(silent = false) {
     // Revisar caché primero (puede estar lista si venimos del setlist)
     const cached = getCachedSong(id)
-    if (cached) {
-      const m = { title: cached.title || '', key: cached.key || '', speed: cached.speed || '', bpm: cached.bpm || '', band: cached.band || '' }
-      setSong(cached)
-      setMeta(m)
-      setOriginalMeta(m)
-      setEditContent(cached.content || '')
-      setLoading(false)
-      setContentLoading(false)
-      return
+    if (!silent) {
+      if (cached) {
+        const m = { title: cached.title || '', key: cached.key || '', speed: cached.speed || '', bpm: cached.bpm || '', band: cached.band || '' }
+        setSong(cached)
+        setMeta(m)
+        setOriginalMeta(m)
+        setEditContent(cached.content || '')
+        setLoading(false)
+        setContentLoading(false)
+      } else if (!seedSong) {
+        setLoading(true)
+      }
     }
 
-    if (!seedSong) setLoading(true)
-    const { data } = await supabase.from('songs').select('*').eq('id', id).single()
-    const m = { title: data?.title || '', key: data?.key || '', speed: data?.speed || '', bpm: data?.bpm || '', band: data?.band || '' }
-    setSong(data)
-    setMeta(m)
-    setOriginalMeta(m)
-    setEditContent(data?.content || '')
-    setLoading(false)
-    setContentLoading(false)
+    try {
+      const { data } = await supabase.from('songs').select('*').eq('id', id).single()
+      if (data) {
+        const m = { title: data?.title || '', key: data?.key || '', speed: data?.speed || '', bpm: data?.bpm || '', band: data?.band || '' }
+        setSong(data)
+        setMeta(m)
+        setOriginalMeta(m)
+        setEditContent(data?.content || '')
+      }
+    } catch (err) {
+      console.error('Error fetching song:', err)
+    } finally {
+      setLoading(false)
+      setContentLoading(false)
+    }
   }
 
   async function fetchBands() {
@@ -144,30 +231,45 @@ export default function SongPage() {
     }
   }
 
-  async function saveMeta() {
-    sessionStorage.removeItem('home_songs')
-    sessionStorage.removeItem('home_songs_content')
-    setSaving(true)
-    await supabase.from('songs').update({
-      title: meta.title || song.title,
-      key:   meta.key   || null,
-      speed: meta.speed || null,
-      bpm:     meta.bpm     || null,
-      band:    meta.band    || null,
-      content: editContent,
-    }).eq('id', id)
-    setSaving(false)
-    setSaved(true)
-    setEditMode(false)
-    setSong(s => ({ ...s, ...meta, content: editContent }))
-    setOriginalMeta({ ...meta })
-    setTimeout(() => setSaved(false), 2000)
-  }
+  const saveMeta = useCallback(async () => {
+    try {
+      sessionStorage.removeItem('home_songs')
+      sessionStorage.removeItem('home_songs_content')
+      setSaving(true)
+      const { error } = await supabase.from('songs').update({
+        title: meta.title || song.title,
+        key:   meta.key   || null,
+        speed: meta.speed || null,
+        bpm:     meta.bpm     || null,
+        band:    meta.band    || null,
+        content: editContent,
+      }).eq('id', id)
+
+      if (error) throw error
+
+      setSaving(false)
+      setSaved(true)
+      setSong(s => ({ ...s, ...meta, content: editContent }))
+      setOriginalMeta({ ...meta })
+      setEditMode(false)
+      setShowPanel(false)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('Error guardando:', err)
+      setSaving(false)
+      alert('Error al guardar cambios')
+    }
+  }, [id, meta, editContent])
 
   const hasChanges = song ? (
     editContent !== (song.content || '') ||
     Object.keys(meta).some(k => meta[k] !== (originalMeta[k] || ''))
   ) : false
+
+  useEffect(() => {
+    setHasUnsavedChanges(hasChanges && editMode)
+    setSaveMeta(() => saveMeta)
+  }, [hasChanges, editMode, saveMeta])
 
   const shouldBlock = editMode && hasChanges
 
@@ -253,18 +355,6 @@ export default function SongPage() {
             style={{ width: 72 }}
           />
 
-          <input
-            className={`${styles.metaInput} ${!meta.band ? styles.empty : ''}`}
-            list="bands-song"
-            value={meta.band}
-            onChange={e => setMeta(m => ({ ...m, band: e.target.value }))}
-            placeholder="+ Banda"
-            style={{ width: 160 }}
-          />
-          <datalist id="bands-song">
-            {bands.map(b => <option key={b} value={b} />)}
-          </datalist>
-
           {/* Separador visual */}
           <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 6px' }} />
 
@@ -285,12 +375,6 @@ export default function SongPage() {
           <button className={`${styles.toggle} ${editMode ? styles.active : ''}`} onClick={() => setEditMode(v => !v)} title="Editar letra">
             {editMode ? <Eye size={13} /> : <Pencil size={13} />}
           </button>
-
-          {(hasChanges || saved) && (
-            <button className={`${styles.saveMetaBtn} ${saved ? styles.savedBtn : styles.pendingBtn}`} onClick={saveMeta} disabled={saving}>
-              {saved ? <Check size={12} /> : <Check size={12} />}
-            </button>
-          )}
           </div>
         </div>
       )}
@@ -305,16 +389,60 @@ export default function SongPage() {
           spellCheck={false}
         />
       ) : (
-        <div
-          className={styles.content}
-          onDoubleClick={() => {
-            setEditMode(true)
-            setShowPanel(true)
-          }}
-          title="Double-click para editar"
-        >
-          {lines.map((line, i) => renderLine(line, i))}
-        </div>
+        <>
+          <div
+            className={styles.content}
+            onDoubleClick={() => {
+              if (devMode) {
+                setEditMode(true)
+                setShowPanel(true)
+              }
+            }}
+            title={devMode ? "Double-click para editar" : ""}
+          >
+            {lines.map((line, i) => renderLine(line, i))}
+          </div>
+
+          {(prevSong || nextSong) && (
+            <div className={styles.navigationButtons}>
+              {prevSong ? (
+                <button
+                  className={styles.navBtn}
+                  onClick={() => { sessionStorage.setItem('setlist_day', sessionStorage.getItem('setlist_day')); navigate(`/cancion/${prevSong.song.id}?ssl=${prevSong.id}&t=${prevSong.transpose || 0}`, { state: { song: prevSong.song }, replace: true }) }}
+                  title="Anterior"
+                >
+                  ← {prevSong.song.title}
+                </button>
+              ) : (
+                <button
+                  className={styles.navMarker}
+                  onClick={() => navigate('/repertorio')}
+                  title="Volver a playlist"
+                >
+                  Inicio
+                </button>
+              )}
+
+              {nextSong ? (
+                <button
+                  className={styles.navBtn}
+                  onClick={() => { sessionStorage.setItem('setlist_day', sessionStorage.getItem('setlist_day')); navigate(`/cancion/${nextSong.song.id}?ssl=${nextSong.id}&t=${nextSong.transpose || 0}`, { state: { song: nextSong.song }, replace: true }) }}
+                  title="Siguiente"
+                >
+                  {nextSong.song.title} →
+                </button>
+              ) : (
+                <button
+                  className={styles.navMarker}
+                  onClick={() => navigate('/repertorio')}
+                  title="Volver a playlist"
+                >
+                  Fin
+                </button>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {presentationMode && (
