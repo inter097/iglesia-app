@@ -1,7 +1,7 @@
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 0 16px;
 }
 
 .loading {
@@ -10,53 +10,6 @@
   color: var(--text2);
 }
 
-.topBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 -16px 0;
-  padding: 12px 16px;
-  position: sticky;
-  top: 46px;
-  z-index: 50;
-  background: var(--bg2);
-  border-bottom: 2px solid var(--accent);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text2);
-  font-size: 14px;
-  transition: color 0.2s;
-}
-.back:hover { color: var(--text); }
-
-.infoPanelBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg3);
-  color: var(--text2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.infoPanelBtn:hover {
-  background: var(--border);
-  color: var(--text);
-}
-.infoPanelBtn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
 
 .infoPanel {
   margin: 0 -16px 20px;
@@ -64,6 +17,9 @@
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   animation: slideDown 0.2s ease-out;
+  position: sticky;
+  top: 46px;
+  z-index: 49;
 }
 
 @keyframes slideDown {
@@ -84,65 +40,8 @@
   flex-wrap: wrap;
 }
 
-.ctrl {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 13px;
-  font-weight: 600;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-}
-.ctrl:hover { background: var(--bg3); }
-
-.transposeVal {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  min-width: 24px;
-  text-align: center;
-}
-
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-.toggle.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-.controlsPanel {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  margin: 0 -16px 20px;
-}
-
-.header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
 .titleInput {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
   background: transparent;
@@ -157,11 +56,6 @@
 .titleInput:focus {
   outline: none;
   border-bottom-color: var(--accent);
-}
-
-.infoPanel .titleInput {
-  font-size: 18px;
-  margin-bottom: 10px;
 }
 
 .metaRow {

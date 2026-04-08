@@ -9,6 +9,7 @@ import DevPage from './pages/DevPage'
 import BandAssignPage from './pages/BandAssignPage'
 import StatsPage from './pages/StatsPage'
 import Navbar from './components/Navbar'
+import { InfoPanelProvider } from './lib/infoPanelContext'
 
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
@@ -22,19 +23,21 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Navbar theme={theme} toggleTheme={toggleTheme} />
-      <Routes>
-        <Route path="/" element={<SetlistPage />} />
-        <Route path="/canciones" element={<Home />} />
-        <Route path="/cancion/:id" element={<SongPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/repertorio" element={<SetlistPage />} />
-        <Route path="/repertorio/:day" element={<SetlistPage />} />
-        <Route path="/dev" element={<DevPage />} />
-        <Route path="/asignar-bandas" element={<BandAssignPage />} />
-        <Route path="/estadisticas" element={<StatsPage />} />
-        <Route path="/login" element={<LoginPage />} />
-      </Routes>
+      <InfoPanelProvider>
+        <Navbar theme={theme} toggleTheme={toggleTheme} />
+        <Routes>
+          <Route path="/" element={<SetlistPage />} />
+          <Route path="/canciones" element={<Home />} />
+          <Route path="/cancion/:id" element={<SongPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/repertorio" element={<SetlistPage />} />
+          <Route path="/repertorio/:day" element={<SetlistPage />} />
+          <Route path="/dev" element={<DevPage />} />
+          <Route path="/asignar-bandas" element={<BandAssignPage />} />
+          <Route path="/estadisticas" element={<StatsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </InfoPanelProvider>
     </BrowserRouter>
   )
 }

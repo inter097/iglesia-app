@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { transposeLine, transposeNote } from '../lib/chords'
 import { getCachedSong, updateCachedSong } from '../lib/songCache'
+import { InfoPanelContext } from '../lib/infoPanelContext'
 import styles from './SongPage.module.css'
 import { KEYS, SPEED_VALUES as SPEEDS } from '../lib/constants'
 
@@ -36,7 +37,7 @@ export default function SongPage() {
   const [originalMeta, setOriginalMeta] = useState(seedMeta)
   const [presentationMode, setPresentationMode] = useState(false)
   const [duplicating, setDuplicating] = useState(false)
-  const [showPanel, setShowPanel] = useState(false)
+  const { showPanel, setShowPanel } = useContext(InfoPanelContext)
   const [isPractice, setIsPractice] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('practice_list') || '[]')).has(id) }
     catch { return false }
@@ -212,21 +213,6 @@ export default function SongPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.topBar}>
-        <button className={styles.back} onClick={() => {
-          if (shouldBlock && !window.confirm('Tienes cambios sin guardar. ¿Salir?')) return
-          navigate(-1)
-        }}>
-          <ArrowLeft size={18} /> Volver
-        </button>
-        <button
-          className={`${styles.infoPanelBtn} ${showPanel ? styles.active : ''}`}
-          onClick={() => setShowPanel(v => !v)}
-          title="Información de la canción"
-        >
-          <Info size={18} />
-        </button>
-      </div>
 
       {showPanel && (
         <div className={styles.infoPanel}>

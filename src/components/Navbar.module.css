@@ -33,6 +33,23 @@
   transform: scale(1.05);
 }
 
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.backBtn:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
 .dayBtn {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -137,4 +154,26 @@
 
 .adminBtn:hover {
   background: var(--accent2);
+}
+
+.infoBtnNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg3);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.infoBtnNav:hover {
+  background: var(--border);
+  color: var(--text);
+}
+.infoBtnNav.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
