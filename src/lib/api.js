@@ -6,7 +6,7 @@
 import { supabase } from './supabase'
 
 const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.eliuth.dev'
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend.eliuth.dev'
 const BASE = `${API_URL}/iglesia`
 
 // ── Auth helpers (VPS) ────────────────────────────────────────────────────
