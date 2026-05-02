@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { getSetlists, getSetlistSongs, getSongs, addSongToSetlist, removeSongFromSetlist, updateSetlistSong } from '../lib/api'
 import { prefetchSong } from '../lib/songCache'
 import { Plus, Trash2, X, Search, AlertTriangle } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -27,13 +27,13 @@ export default function SetlistPage() {
     () => dayParam || localStorage.getItem('repertorio_day') || getDefaultDay()
   )
 
-  // Actualizar cuando cambia el día en la URL
   useEffect(() => {
     if (dayParam && DAYS.find(d => d.key === dayParam)) {
       setSelectedDay(dayParam)
       localStorage.setItem('repertorio_day', dayParam)
     }
   }, [dayParam])
+
   const [setlists, setSetlists]   = useState({})
   const [allSongs, setAllSongs]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -48,11 +48,8 @@ export default function SetlistPage() {
 
   const currentSongs = selectedDay ? (setlists[selectedDay]?.songs || []) : []
 
-  useEffect(() => {
-    fetchAll()
-  }, [])
+  useEffect(() => { fetchAll() }, [])
 
-  // Prefetch contenido de las canciones del día seleccionado en background
   useEffect(() => {
     const songs = selectedDay ? (setlists[selectedDay]?.songs || []) : []
     songs.forEach(item => prefetchSong(item.song.id))
@@ -78,22 +75,16 @@ export default function SetlistPage() {
     }
 
     try {
-      const [{ data: sls, error: e1 }, { data: songs, error: e2 }] = await Promise.all([
-        supabase.from('setlists').select('id, day'),
-        supabase.from('songs').select('id, title, key, speed').order('title'),
+      const [sls, songs] = await Promise.all([
+        getSetlists(),
+        getSongs('id, title, key, speed'),
       ])
-      if (e1) throw e1
-      if (e2) throw e2
 
       setAllSongs(songs || [])
 
       const result = {}
       await Promise.all((sls || []).map(async sl => {
-        const { data: items } = await supabase
-          .from('setlist_songs')
-          .select('id, position, transpose, song:song_id(id, title, key, speed, has_error)')
-          .eq('setlist_id', sl.id)
-          .order('position')
+        const items = await getSetlistSongs(sl.id)
         result[sl.day] = { id: sl.id, songs: items || [] }
       }))
 
@@ -116,11 +107,7 @@ export default function SetlistPage() {
   async function refetchDay() {
     const sl = setlists[selectedDay]
     if (!sl) return
-    const { data: items } = await supabase
-      .from('setlist_songs')
-      .select('id, position, song:song_id(id, title, key, speed, has_error)')
-      .eq('setlist_id', sl.id)
-      .order('position')
+    const items = await getSetlistSongs(sl.id)
     setSetlists(prev => ({
       ...prev,
       [selectedDay]: { ...prev[selectedDay], songs: items || [] }
@@ -138,14 +125,13 @@ export default function SetlistPage() {
     const maxPos = getMaxPosition(sl.songs)
     setSearch('')
     setAdding(false)
-    const { error } = await supabase.from('setlist_songs').insert({
-      setlist_id: sl.id,
-      song_id: song.id,
-      position: maxPos + 1,
-    })
-    if (error) { alert('Error al agregar la canción'); return }
-    await refetchDay()
-    fetchAll(true)
+    try {
+      await addSongToSetlist(sl.id, song.id, maxPos + 1)
+      await refetchDay()
+      fetchAll(true)
+    } catch {
+      alert('Error al agregar la canción')
+    }
   }
 
   async function clearDay() {
@@ -154,15 +140,24 @@ export default function SetlistPage() {
     if (!sl) return
     const prev = sl.songs
     updateDay(() => [])
-    const { error } = await supabase.from('setlist_songs').delete().eq('setlist_id', sl.id)
-    if (error) { updateDay(() => prev); alert('Error al vaciar el repertorio') }
+    try {
+      await Promise.all(prev.map(item => removeSongFromSetlist(sl.id, item.id)))
+    } catch {
+      updateDay(() => prev)
+      alert('Error al vaciar el repertorio')
+    }
   }
 
   async function removeItem(itemId) {
-    const prev = setlists[selectedDay].songs
+    const sl = setlists[selectedDay]
+    const prev = sl.songs
     updateDay(songs => songs.filter(s => s.id !== itemId))
-    const { error } = await supabase.from('setlist_songs').delete().eq('id', itemId)
-    if (error) { updateDay(() => prev); alert('Error al eliminar') }
+    try {
+      await removeSongFromSetlist(sl.id, itemId)
+    } catch {
+      updateDay(() => prev)
+      alert('Error al eliminar')
+    }
   }
 
   function handleTouchStart(e, i) {
@@ -199,10 +194,13 @@ export default function SetlistPage() {
     updateDay(() => songs)
     setDragIdx(null)
     setDragOverIdx(null)
-    const results = await Promise.all(songs.map((s, i) =>
-      supabase.from('setlist_songs').update({ position: i }).eq('id', s.id)
-    ))
-    if (results.some(r => r.error)) { updateDay(() => prev); alert('Error al reordenar') }
+    const sl = setlists[selectedDay]
+    try {
+      await Promise.all(songs.map((s, i) => updateSetlistSong(sl.id, s.id, { position: i, transpose: s.transpose || 0 })))
+    } catch {
+      updateDay(() => prev)
+      alert('Error al reordenar')
+    }
   }
 
   const filtered = allSongs.filter(s =>
@@ -211,8 +209,6 @@ export default function SetlistPage() {
 
   return (
     <div className={styles.container}>
-
-{/* Contenido del día seleccionado */}
       {!selectedDay ? (
         <div className={styles.placeholder}>Selecciona un día para ver el repertorio</div>
       ) : error ? (
@@ -246,7 +242,7 @@ export default function SetlistPage() {
               onTouchEnd={handleTouchEnd}
               onClick={() => { if (didDragRef.current) return; sessionStorage.setItem('setlist_day', selectedDay); navigate(`/cancion/${item.song.id}?ssl=${item.id}&t=${item.transpose || 0}`, { state: { song: item.song } }) }}
             >
-<div className={styles.itemNum}>{i + 1}</div>
+              <div className={styles.itemNum}>{i + 1}</div>
               <div className={styles.itemInfo}>
                 <span className={styles.itemTitle}>{item.song.title}</span>
                 <div className={styles.itemMeta}>
@@ -263,7 +259,6 @@ export default function SetlistPage() {
             </div>
           ))}
 
-          {/* Buscador para agregar */}
           {adding ? (
             <div className={styles.searchBox}>
               <div className={styles.searchRow}>

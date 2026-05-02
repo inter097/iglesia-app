@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { getSongs, getAllSetlistSongs } from '../lib/api'
 import { Music, Users, Hash, Zap, AlertCircle, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import styles from './StatsPage.module.css'
 
@@ -11,9 +11,9 @@ export default function StatsPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [{ data: s }, { data: ss }] = await Promise.all([
-        supabase.from('songs').select('id, title, key, speed, band'),
-        supabase.from('setlist_songs').select('song_id, setlist:setlist_id(day)'),
+      const [s, ss] = await Promise.all([
+        getSongs('id, title, key, speed, band'),
+        getAllSetlistSongs(),
       ])
       setSongs(s || [])
       setSetlistSongs(ss || [])

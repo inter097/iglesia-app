@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { getSong, getSongs, createSong, updateSong, updateSetlistSong } from '../lib/api'
 import { transposeLine, transposeNote, isChordLine } from '../lib/chords'
 import { getCachedSong, updateCachedSong } from '../lib/songCache'
 import { InfoPanelContext } from '../lib/infoPanelContext'
@@ -144,7 +144,7 @@ export default function SongPage() {
     }
 
     try {
-      const { data } = await supabase.from('songs').select('*').eq('id', id).single()
+      const data = await getSong(id)
       if (data) {
         const m = { title: data?.title || '', key: data?.key || '', speed: data?.speed || '', bpm: data?.bpm || '', band: data?.band || '' }
         setSong(data)
@@ -161,7 +161,7 @@ export default function SongPage() {
   }
 
   async function fetchBands() {
-    const { data } = await supabase.from('songs').select('band').not('band', 'is', null)
+    const data = await getSongs('band')
     const unique = [...new Set((data || []).map(s => s.band).filter(Boolean))].sort()
     setBands(unique)
   }
@@ -180,17 +180,14 @@ export default function SongPage() {
         }).join('\n')
       : ''
     const newKey = song.key ? transposeNote(song.key, transpose) : null
-    const { error } = await supabase.from('songs').insert({
-      title: song.title,
-      key: newKey,
-      speed: song.speed,
-      bpm: song.bpm,
-      band: song.band,
-      is_mvi: song.is_mvi,
-      content: newContent,
-    })
+    try {
+      await createSong({ title: song.title, key: newKey, speed: song.speed, bpm: song.bpm, band: song.band, is_mvi: song.is_mvi, content: newContent })
+    } catch {
+      setDuplicating(false)
+      alert('Error al duplicar')
+      return
+    }
     setDuplicating(false)
-    if (error) { alert('Error al duplicar'); return }
     alert(`Copia guardada${newKey ? ` en ${newKey}` : ''}. Búscala en la lista de canciones.`)
   }
 
@@ -221,13 +218,13 @@ export default function SongPage() {
         sessionStorage.setItem('setlist_cache', JSON.stringify(cached))
       }
     } catch {}
-    await supabase.from('songs').update({ has_error: next }).eq('id', id)
+    await updateSong(id, { has_error: next })
   }
 
   async function changeTranspose(newVal) {
     setTranspose(newVal)
     if (setlistSongId) {
-      await supabase.from('setlist_songs').update({ transpose: newVal }).eq('id', setlistSongId)
+      await updateSetlistSong(null, setlistSongId, { transpose: newVal })
     }
   }
 
@@ -237,16 +234,14 @@ export default function SongPage() {
       sessionStorage.removeItem('home_songs_content')
       sessionStorage.removeItem('setlist_cache')
       setSaving(true)
-      const { error } = await supabase.from('songs').update({
+      await updateSong(id, {
         title: meta.title || song.title,
         key:   meta.key   || null,
         speed: meta.speed || null,
         bpm:     meta.bpm     || null,
         band:    meta.band    || null,
         content: editContent,
-      }).eq('id', id)
-
-      if (error) throw error
+      })
 
       setSaving(false)
       setSaved(true)

@@ -1,22 +1,16 @@
-import { supabase } from './supabase'
+import { getSong } from './api'
 
-const cache = new Map()  // songId → full song data
+const cache = new Map()
 
 export function getCachedSong(id) {
   return cache.get(id) || null
 }
 
 export function prefetchSong(id) {
-  if (cache.has(id)) return  // ya está cacheada
-  supabase.from('songs').select('*').eq('id', id).single()
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn(`[songCache] Failed to prefetch song ${id}:`, error.message)
-        return
-      }
-      if (data) cache.set(id, data)
-    })
-    .catch(err => console.error(`[songCache] Unexpected error prefetching ${id}:`, err))
+  if (cache.has(id)) return
+  getSong(id)
+    .then(data => { if (data) cache.set(id, data) })
+    .catch(err => console.warn(`[songCache] Failed to prefetch song ${id}:`, err))
 }
 
 export function updateCachedSong(id, partial) {

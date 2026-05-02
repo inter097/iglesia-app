@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, X, Search, ChevronDown, ChevronUp } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { getSongs, updateSong } from '../lib/api'
 import styles from './BandAssignPage.module.css'
 
 export default function BandAssignPage() {
@@ -27,7 +27,7 @@ export default function BandAssignPage() {
 
   async function fetchSongs() {
     setLoading(true)
-    const { data } = await supabase.from('songs').select('id, title, key, band').order('title')
+    const data = await getSongs('id, title, key, band')
     setSongs(data || [])
     setLoading(false)
   }
@@ -61,7 +61,7 @@ export default function BandAssignPage() {
     setDragOver(null)
     if (!dragId) return
     const band = targetBand || null
-    await supabase.from('songs').update({ band }).eq('id', dragId)
+    await updateSong(dragId, { band })
     setSongs(prev => prev.map(s => s.id === dragId ? { ...s, band } : s))
     setDragId(null)
   }

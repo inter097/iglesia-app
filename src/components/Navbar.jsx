@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X, ArrowLeft, Info } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { isAuthenticated } from '../lib/api'
 import { useEffect, useState, useRef, useContext } from 'react'
 import { InfoPanelContext } from '../lib/infoPanelContext'
 import styles from './Navbar.module.css'
@@ -44,14 +44,8 @@ export default function Navbar({ theme, toggleTheme }) {
   }, [location.pathname])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setIsAdmin(!!data.session)
-    })
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      setIsAdmin(!!session)
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [])
+    isAuthenticated().then(auth => setIsAdmin(auth))
+  }, [location.pathname])
 
   function toggleView() {
     if (isHome) navigate('/canciones')

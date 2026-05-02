@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Music, Zap, Minus, Waves, Pencil, X, Check, FilterX, AlertTriangle, Bookmark } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { getSongs, updateSong } from '../lib/api'
 import styles from './Home.module.css'
 import { KEYS } from '../lib/constants'
 
@@ -63,11 +63,7 @@ export default function Home() {
       ? 'id, title, key, speed, is_mvi, band, has_error, content'
       : 'id, title, key, speed, is_mvi, band, has_error'
     try {
-      const { data, error } = await supabase
-        .from('songs')
-        .select(fields)
-        .order('title')
-      if (error) throw error
+      const data = await getSongs(fields)
       setSongs(data || [])
       sessionStorage.setItem(cacheKey, JSON.stringify(data || []))
     } catch (err) {
@@ -110,14 +106,14 @@ export default function Home() {
 
   async function handleSave() {
     setSaving(true)
-    await supabase.from('songs').update({
+    await updateSong(form.id, {
       title: form.title,
       key:   form.key   || null,
       speed: form.speed || null,
       band:  form.band  || null,
       bpm:   form.bpm   || null,
       is_mvi: form.is_mvi || false,
-    }).eq('id', form.id)
+    })
     setSaving(false)
     closeEdit()
     fetchSongs()

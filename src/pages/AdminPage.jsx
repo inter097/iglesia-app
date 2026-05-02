@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { getSongs, getSong, createSong, updateSong, deleteSong, logout } from '../lib/api'
 import { Plus, Pencil, Trash2, LogOut, X, Check, Tag } from 'lucide-react'
 import styles from './AdminPage.module.css'
 import { KEYS, SPEED_VALUES as SPEEDS } from '../lib/constants'
@@ -10,20 +10,18 @@ const EMPTY_SONG = { title: '', key: '', speed: '', bpm: '', content: '', is_mvi
 export default function AdminPage() {
   const [songs, setSongs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(null) // null | 'new' | song object
+  const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_SONG)
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [bands, setBands] = useState([])
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchSongs()
-  }, [])
+  useEffect(() => { fetchSongs() }, [])
 
   async function fetchSongs() {
     setLoading(true)
-    const { data } = await supabase.from('songs').select('id, title, key, speed, band').order('title')
+    const data = await getSongs('id, title, key, speed, band')
     setSongs(data || [])
     const unique = [...new Set((data || []).map(s => s.band).filter(Boolean))].sort()
     setBands(unique)
@@ -31,7 +29,7 @@ export default function AdminPage() {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await logout()
     navigate('/')
   }
 
@@ -41,7 +39,7 @@ export default function AdminPage() {
   }
 
   async function openEdit(song) {
-    const { data } = await supabase.from('songs').select('*').eq('id', song.id).single()
+    const data = await getSong(song.id)
     setForm(data)
     setEditing(data)
   }
@@ -50,9 +48,9 @@ export default function AdminPage() {
     if (!form.title.trim()) return
     setSaving(true)
     if (editing === 'new') {
-      await supabase.from('songs').insert({ ...form })
+      await createSong({ ...form })
     } else {
-      await supabase.from('songs').update({ ...form }).eq('id', form.id)
+      await updateSong(form.id, { ...form })
     }
     setSaving(false)
     setEditing(null)
@@ -61,7 +59,7 @@ export default function AdminPage() {
 
   async function handleDelete(id) {
     if (!confirm('¿Eliminar esta canción?')) return
-    await supabase.from('songs').delete().eq('id', id)
+    await deleteSong(id)
     fetchSongs()
   }
 
@@ -163,9 +161,7 @@ export default function AdminPage() {
               <div>
                 <label className={styles.label}>BPM</label>
                 <input
-                  type="number"
-                  min="1"
-                  max="300"
+                  type="number" min="1" max="300"
                   className={styles.input}
                   value={form.bpm || ''}
                   onChange={e => setForm(f => ({ ...f, bpm: e.target.value }))}
