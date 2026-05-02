@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getSongs, getSong, createSong, updateSong, deleteSong, logout } from '../lib/api'
+import { getSongs, getSong, createSong, updateSong, deleteSong, logout, isAuthenticated } from '../lib/api'
 import { Plus, Pencil, Trash2, LogOut, X, Check, Tag } from 'lucide-react'
 import styles from './AdminPage.module.css'
 import { KEYS, SPEED_VALUES as SPEEDS } from '../lib/constants'
@@ -17,7 +17,10 @@ export default function AdminPage() {
   const [bands, setBands] = useState([])
   const navigate = useNavigate()
 
-  useEffect(() => { fetchSongs() }, [])
+  useEffect(() => {
+    isAuthenticated().then(auth => { if (!auth) navigate('/login') })
+    fetchSongs()
+  }, [])
 
   async function fetchSongs() {
     setLoading(true)

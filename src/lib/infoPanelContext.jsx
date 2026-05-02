@@ -1,4 +1,5 @@
 import { createContext, useState } from 'react'
+import { isAuthenticated } from './api'
 
 export const InfoPanelContext = createContext()
 
@@ -14,7 +15,9 @@ export function InfoPanelProvider({ children }) {
   const [editMode, setEditMode] = useState(false)
   const [saveMeta, setSaveMeta] = useState(() => () => {})
 
-  const toggleDevMode = (value) => {
+  const toggleDevMode = async (value) => {
+    const auth = await isAuthenticated()
+    if (!auth) return
     setDevMode(value)
     localStorage.setItem('devMode', JSON.stringify(value))
   }

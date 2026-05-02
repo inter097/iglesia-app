@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Music, Zap, Minus, Waves, Pencil, X, Check, FilterX, AlertTriangle, Bookmark } from 'lucide-react'
-import { getSongs, updateSong } from '../lib/api'
+import { getSongs, updateSong, useAdmin } from '../lib/api'
 import styles from './Home.module.css'
 import { KEYS } from '../lib/constants'
 
@@ -12,6 +12,7 @@ const SPEEDS = [
 ]
 
 export default function Home() {
+  const isAdmin = useAdmin()
   const [songs, setSongs]         = useState([])
   const [search, setSearch]       = useState(() => sessionStorage.getItem('h_search') || '')
   const [filterKey, setFilterKey] = useState(() => sessionStorage.getItem('h_key')    || '')
@@ -230,9 +231,9 @@ export default function Home() {
                   {practiceIds.has(song.id) && <span className={styles.practiceBadge} title="Para practicar"><Bookmark size={11} /></span>}
                 </div>
               </Link>
-              <button className={styles.editBtn} onClick={e => openEdit(e, song)} title="Editar">
+              {isAdmin && <button className={styles.editBtn} onClick={e => openEdit(e, song)} title="Editar">
                 <Pencil size={13} />
-              </button>
+              </button>}
             </div>
           ))}
         </div>

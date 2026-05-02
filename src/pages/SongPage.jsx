@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Music2, AlignLeft, ChevronUp, ChevronDown, Check, Pencil, Eye, Expand, Minimize2, AlertTriangle, Bookmark, Settings2, Info } from 'lucide-react'
-import { getSong, getSongs, createSong, updateSong, updateSetlistSong } from '../lib/api'
+import { getSong, getSongs, createSong, updateSong, updateSetlistSong, useAdmin } from '../lib/api'
 import { transposeLine, transposeNote, isChordLine } from '../lib/chords'
 import { getCachedSong, updateCachedSong } from '../lib/songCache'
 import { InfoPanelContext } from '../lib/infoPanelContext'
@@ -9,6 +9,7 @@ import styles from './SongPage.module.css'
 import { KEYS, SPEED_VALUES as SPEEDS } from '../lib/constants'
 
 export default function SongPage() {
+  const isAdmin = useAdmin()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -390,7 +391,7 @@ export default function SongPage() {
           <div
             className={styles.content}
             onDoubleClick={() => {
-              if (devMode) {
+              if (devMode && isAdmin) {
                 setEditMode(true)
                 setShowPanel(true)
               }

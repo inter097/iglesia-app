@@ -4,10 +4,18 @@
  * Para volver a Supabase: VITE_USE_SUPABASE=true en .env
  */
 import { supabase } from './supabase'
+import { useState, useEffect } from 'react'
 
 const USE_SUPABASE = false
-const API_URL = import.meta.env.VITE_API_URL || 'https://hub.eliuth.dev'
-const BASE = `${API_URL}/iglesia`
+const BASE = 'https://hub.eliuth.dev/iglesia'
+
+export function useAdmin() {
+  const [isAdmin, setIsAdmin] = useState(false)
+  useEffect(() => {
+    isAuthenticated().then(setIsAdmin)
+  }, [])
+  return isAdmin
+}
 
 // ── Auth helpers (VPS) ────────────────────────────────────────────────────
 function getToken() {
