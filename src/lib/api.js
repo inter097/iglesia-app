@@ -5,8 +5,8 @@
  */
 import { supabase } from './supabase'
 import { useState, useEffect } from 'react'
-import { enqueue, syncQueue, getPendingCount } from './offlineQueue'
-import { updateCachedSong } from './songCache'
+import { enqueue, syncQueue, getPendingCount, getQueue } from './offlineQueue'
+import { updateCachedSong, getCachedSong } from './songCache'
 
 function isOnline() { return navigator.onLine }
 
@@ -120,6 +120,13 @@ export async function getSong(id) {
     const { data, error } = await supabase.from('songs').select('*').eq('id', id).single()
     if (error) throw error
     return data
+  }
+  // If offline edit pending, return cached version to avoid overwriting local changes
+  const queue = await getQueue()
+  const hasPending = queue.some(item => item.type === 'updateSong' && item.songId === id)
+  if (hasPending) {
+    const cached = getCachedSong(id)
+    if (cached) return cached
   }
   return vpsRequest(`/songs/${id}`)
 }
