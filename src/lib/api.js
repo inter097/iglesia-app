@@ -5,6 +5,24 @@
  */
 import { supabase } from './supabase'
 import { useState, useEffect } from 'react'
+import { enqueue, syncQueue, getPendingCount } from './offlineQueue'
+
+function isOnline() { return navigator.onLine }
+
+window.addEventListener('online', async () => {
+  const count = await getPendingCount()
+  if (count === 0) return
+  await syncQueue(async (item) => {
+    if (item.type === 'updateSong') {
+      await vpsRequest(`/songs/${item.songId}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(item.data) })
+    } else if (item.type === 'createSong') {
+      await vpsRequest('/songs', { method: 'POST', headers: authHeaders(), body: JSON.stringify(item.data) })
+    } else if (item.type === 'deleteSong') {
+      await vpsRequest(`/songs/${item.songId}`, { method: 'DELETE', headers: authHeaders() })
+    }
+  })
+  window.dispatchEvent(new CustomEvent('queue-synced'))
+})
 
 const USE_SUPABASE = false
 const BASE = 'https://hub.eliuth.dev/iglesia'
@@ -111,6 +129,10 @@ export async function createSong(songData) {
     if (error) throw error
     return data
   }
+  if (!isOnline()) {
+    await enqueue({ type: 'createSong', data: songData })
+    return { ...songData, id: 'offline-' + Date.now(), _offline: true }
+  }
   return vpsRequest('/songs', {
     method: 'POST',
     headers: authHeaders(),
@@ -124,6 +146,10 @@ export async function updateSong(id, songData) {
     if (error) throw error
     return data
   }
+  if (!isOnline()) {
+    await enqueue({ type: 'updateSong', songId: id, data: songData })
+    return { ...songData, id, _offline: true }
+  }
   return vpsRequest(`/songs/${id}`, {
     method: 'PUT',
     headers: authHeaders(),
@@ -135,6 +161,10 @@ export async function deleteSong(id) {
   if (USE_SUPABASE) {
     const { error } = await supabase.from('songs').delete().eq('id', id)
     if (error) throw error
+    return true
+  }
+  if (!isOnline()) {
+    await enqueue({ type: 'deleteSong', songId: id })
     return true
   }
   return vpsRequest(`/songs/${id}`, {
