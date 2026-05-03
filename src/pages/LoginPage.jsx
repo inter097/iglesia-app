@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useContext } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { login } from '../lib/api'
+import { InfoPanelContext } from '../lib/infoPanelContext'
 import styles from './LoginPage.module.css'
 
 export default function LoginPage() {
@@ -8,6 +9,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const { toggleDevMode } = useContext(InfoPanelContext)
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -15,7 +18,9 @@ export default function LoginPage() {
     setError('')
     try {
       await login(password)
-      navigate('/admin')
+      toggleDevMode(true)
+      const from = location.state?.from || '/'
+      navigate(from)
     } catch {
       setError('Contraseña incorrecta')
     }

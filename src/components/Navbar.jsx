@@ -148,12 +148,8 @@ export default function Navbar({ theme, toggleTheme }) {
                 {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
               </button>
               <hr className={styles.menuDivider} />
-              {isAdmin ? (
-                <Link to="/admin" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
-                  <Shield size={16} /> Admin
-                </Link>
-              ) : (
-                <Link to="/login" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+              {!isAdmin && (
+                <Link to="/login" state={{ from: location.pathname }} className={styles.menuItem} onClick={() => setMenuOpen(false)}>
                   <Shield size={16} /> Login
                 </Link>
               )}
