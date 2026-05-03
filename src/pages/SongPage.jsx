@@ -46,6 +46,21 @@ export default function SongPage() {
   const [nextSong, setNextSong] = useState(null)
   const [prevSong, setPrevSong] = useState(null)
   const isMountedRef = useRef(true)
+  const textareaRef = useRef(null)
+  const [clickedLine, setClickedLine] = useState(0)
+
+  useEffect(() => {
+    if (editMode && textareaRef.current && clickedLine > 0) {
+      const ta = textareaRef.current
+      const lines = ta.value.split('\n')
+      const lineHeight = parseInt(getComputedStyle(ta).lineHeight) || 20
+      ta.scrollTop = Math.max(0, (clickedLine - 3)) * lineHeight
+      // Place cursor at clicked line
+      const pos = lines.slice(0, clickedLine).join('\n').length
+      ta.setSelectionRange(pos, pos)
+      ta.focus()
+    }
+  }, [editMode])
 
   useEffect(() => {
     return () => {
@@ -292,11 +307,11 @@ export default function SongPage() {
     const trimmed = line.trim()
 
     // Empty line
-    if (!trimmed) return <div key={index} className={styles.emptyLine} />
+    if (!trimmed) return <div key={index} data-line={index} className={styles.emptyLine} />
 
     // Section header
     if (/^(INTRO|VERSO|PRE|CORO|PUENTE|OUTRO|BRIDGE|CHORUS|VERSE|ESTROFA|FINAL|FIN)/i.test(trimmed)) {
-      return <div key={index} className={styles.section}>{trimmed}</div>
+      return <div key={index} data-line={index} className={styles.section}>{trimmed}</div>
     }
 
     // Check if chord line (heuristic: mostly chord tokens)
@@ -305,7 +320,7 @@ export default function SongPage() {
     if (isChordLineResult) {
       if (!showChords) return null
       const transposed = transpose !== 0 ? transposeLine(line, transpose) : line
-      return <div key={index} className={styles.chordLine} style={{ fontSize }}>{transposed}</div>
+      return <div key={index} data-line={index} className={styles.chordLine} style={{ fontSize }}>{transposed}</div>
     }
 
     return <div key={index} className={styles.lyricLine} style={{ fontSize }}>{showChords ? line : trimmed}</div>
@@ -381,6 +396,7 @@ export default function SongPage() {
         <div className={styles.loading}>Cargando letra...</div>
       ) : editMode ? (
         <textarea
+          ref={textareaRef}
           className={styles.editArea}
           value={editContent}
           onChange={e => setEditContent(e.target.value)}
@@ -390,8 +406,10 @@ export default function SongPage() {
         <>
           <div
             className={styles.content}
-            onDoubleClick={() => {
+            onDoubleClick={(e) => {
               if (devMode && isAdmin) {
+                const el = e.target.closest('[data-line]')
+                if (el) setClickedLine(parseInt(el.dataset.line) || 0)
                 setEditMode(true)
                 setShowPanel(true)
               }
