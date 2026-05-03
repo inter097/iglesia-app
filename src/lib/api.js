@@ -6,6 +6,7 @@
 import { supabase } from './supabase'
 import { useState, useEffect } from 'react'
 import { enqueue, syncQueue, getPendingCount } from './offlineQueue'
+import { updateCachedSong } from './songCache'
 
 function isOnline() { return navigator.onLine }
 
@@ -148,6 +149,7 @@ export async function updateSong(id, songData) {
   }
   if (!isOnline()) {
     await enqueue({ type: 'updateSong', songId: id, data: songData })
+    updateCachedSong(id, songData)
     return { ...songData, id, _offline: true }
   }
   return vpsRequest(`/songs/${id}`, {
