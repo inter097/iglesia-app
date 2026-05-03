@@ -23,8 +23,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
       },
       manifest: {
-        name: 'Iglesia AFC',
-        short_name: 'AFC',
+        name: 'Test AFC',
+        short_name: 'Test AFC',
         description: 'Cancionero Iglesia AFC',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
