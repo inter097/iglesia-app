@@ -116,35 +116,34 @@ export default function Navbar({ theme, toggleTheme }) {
           onClick={liveMode ? undefined : cycleDay}
           className={styles.dayBtn}
           title={liveMode ? 'Modo en vivo — bloqueado' : 'Cambiar día'}
-          style={liveMode ? { opacity: 0.5, cursor: 'default' } : {}}
+          style={liveMode ? { cursor: 'default' } : {}}
         >
           {currentDayLabel}
         </button>
       )}
 
       {isSongPage && (
-        <div className={styles.songInfo}>
+        <button
+          className={styles.songInfo}
+          onClick={() => setShowPanel(v => !v)}
+          title="Ver información"
+          style={{ cursor: 'pointer', background: 'none', border: 'none', textAlign: 'center' }}
+        >
           <div className={styles.songTitle}>{songTitle}</div>
           {songBand && <div className={styles.songBand}>{songBand}</div>}
-        </div>
+        </button>
       )}
 
-      {isSongPage ? (
+      {isSongPage && hasUnsavedChanges && (
         <button
-          className={`${styles.infoBtnNav} ${showPanel ? styles.active : ''} ${hasUnsavedChanges ? styles.unsaved : ''}`}
-          onClick={() => {
-            if (hasUnsavedChanges && saveMeta) {
-              saveMeta()
-            } else {
-              setShowPanel(v => !v)
-            }
-          }}
-          title={hasUnsavedChanges ? "Guardar cambios" : "Información de la canción"}
+          className={`${styles.infoBtnNav} ${styles.unsaved}`}
+          onClick={() => saveMeta && saveMeta()}
+          title="Guardar cambios"
         >
           <Info size={20} />
         </button>
-      ) : (
-        <div className={styles.menu} ref={menuRef} onClick={e => e.stopPropagation()}>
+      )}
+      <div className={styles.menu} ref={menuRef} onClick={e => e.stopPropagation()}>
           <button onClick={e => { e.stopPropagation(); setMenuOpen(v => !v) }} className={styles.menuBtn} title="Menú">
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -178,7 +177,6 @@ export default function Navbar({ theme, toggleTheme }) {
             </div>
           )}
         </div>
-      )}
     </nav>
   )
 }
