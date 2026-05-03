@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X, ArrowLeft, Info } from 'lucide-react'
+import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X, ArrowLeft, Info, Play, Square } from 'lucide-react'
 import { isAuthenticated } from '../lib/api'
 import { useEffect, useState, useRef, useContext } from 'react'
 import { InfoPanelContext } from '../lib/infoPanelContext'
@@ -23,6 +23,13 @@ function getDefaultDay() {
 export default function Navbar({ theme, toggleTheme }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [liveMode, setLiveMode] = useState(() => JSON.parse(localStorage.getItem('liveMode') || 'false'))
+
+  function toggleLiveMode() {
+    const next = !liveMode
+    setLiveMode(next)
+    localStorage.setItem('liveMode', JSON.stringify(next))
+  }
   const location = useLocation()
   const navigate = useNavigate()
   const menuRef = useRef(null)
@@ -94,13 +101,23 @@ export default function Navbar({ theme, toggleTheme }) {
           <ArrowLeft size={22} />
         </button>
       ) : (
-        <button onClick={toggleView} className={styles.toggleBtn} title={isHome ? 'Ir a Canciones' : 'Ir a Repertorio'}>
-          {isHome ? <BookOpen size={22} /> : <Home size={22} />}
+        <button
+          onClick={toggleLiveMode}
+          className={styles.toggleBtn}
+          title={liveMode ? 'Salir de modo en vivo' : 'Modo en vivo'}
+          style={liveMode ? { color: '#ef4444' } : {}}
+        >
+          {liveMode ? <Square size={22} fill="#ef4444" /> : <Play size={22} />}
         </button>
       )}
 
       {isHome && !isSongPage && (
-        <button onClick={cycleDay} className={styles.dayBtn} title="Cambiar día">
+        <button
+          onClick={liveMode ? undefined : cycleDay}
+          className={styles.dayBtn}
+          title={liveMode ? 'Modo en vivo — bloqueado' : 'Cambiar día'}
+          style={liveMode ? { opacity: 0.5, cursor: 'default' } : {}}
+        >
           {currentDayLabel}
         </button>
       )}
@@ -134,6 +151,11 @@ export default function Navbar({ theme, toggleTheme }) {
 
           {menuOpen && (
             <div className={styles.menuDropdown}>
+              <button onClick={() => { toggleView(); setMenuOpen(false) }} className={styles.menuItem}>
+                {isHome ? <BookOpen size={16} /> : <Home size={16} />}
+                {isHome ? 'Canciones' : 'Repertorio'}
+              </button>
+              <hr className={styles.menuDivider} />
               <Link to="/estadisticas" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
                 <BarChart2 size={16} /> Estadísticas
               </Link>

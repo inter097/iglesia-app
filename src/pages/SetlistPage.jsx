@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { getSetlists, getSetlistSongs, getSongs, addSongToSetlist, removeSongFromSetlist, updateSetlistSong } from '../lib/api'
+
+function useLiveMode() {
+  const [liveMode, setLiveMode] = useState(() => JSON.parse(localStorage.getItem('liveMode') || 'false'))
+  useEffect(() => {
+    const handler = () => setLiveMode(JSON.parse(localStorage.getItem('liveMode') || 'false'))
+    window.addEventListener('storage', handler)
+    const interval = setInterval(handler, 500)
+    return () => { window.removeEventListener('storage', handler); clearInterval(interval) }
+  }, [])
+  return liveMode
+}
 import { prefetchSong } from '../lib/songCache'
 import { Plus, Trash2, X, Search, AlertTriangle } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -22,6 +33,7 @@ function getDefaultDay() {
 }
 
 export default function SetlistPage() {
+  const liveMode = useLiveMode()
   const { day: dayParam } = useParams()
   const [selectedDay, setSelectedDay] = useState(
     () => dayParam || localStorage.getItem('repertorio_day') || getDefaultDay()
@@ -56,6 +68,7 @@ export default function SetlistPage() {
   }, [selectedDay, setlists])
 
   function selectDay(day) {
+    if (liveMode) return
     setSelectedDay(day)
     localStorage.setItem('repertorio_day', day)
   }
