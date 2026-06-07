@@ -1,0 +1,46 @@
+name: Deploy Backend to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy backend to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "backend/"
+          target: "/opt/iglesia-api/"
+          strip_components: 1
+
+      - name: Write .env, rebuild and verify
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/iglesia-api
+            cat > .env <<EOF
+            JWT_SECRET=${{ secrets.IGLESIA_JWT_SECRET }}
+            JWT_EXPIRY_HOURS=24
+            POSTGRES_HOST=postgres
+            POSTGRES_DB=datalab
+            POSTGRES_USER=eliuth
+            POSTGRES_PASSWORD=${{ secrets.IGLESIA_DB_PASSWORD }}
+            ADMIN_PASSWORD_HASH=${{ secrets.IGLESIA_ADMIN_HASH }}
+            EOF
+            docker compose up -d --build --force-recreate
+            sleep 8
+            curl -sf http://localhost:5001/iglesia/songs | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'OK — {len(d)} songs')" || (echo "Health check failed" && exit 1)

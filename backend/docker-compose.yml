@@ -1,0 +1,18 @@
+services:
+  iglesia-api:
+    build: .
+    container_name: iglesia-api
+    env_file: .env
+    restart: unless-stopped
+    networks:
+      - datalab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iglesia-api.rule=Host(`hub.eliuth.dev`)"
+      - "traefik.http.routers.iglesia-api.entrypoints=websecure"
+      - "traefik.http.routers.iglesia-api.tls.certresolver=cloudflare"
+      - "traefik.http.services.iglesia-api.loadbalancer.server.port=5001"
+
+networks:
+  datalab:
+    external: true

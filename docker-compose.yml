@@ -1,0 +1,17 @@
+services:
+  iglesia-frontend:
+    build: .
+    container_name: iglesia-frontend
+    restart: unless-stopped
+    networks:
+      - datalab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iglesia-frontend.rule=Host(`afc.eliuth.dev`)"
+      - "traefik.http.routers.iglesia-frontend.entrypoints=websecure"
+      - "traefik.http.routers.iglesia-frontend.tls.certresolver=cloudflare"
+      - "traefik.http.services.iglesia-frontend.loadbalancer.server.port=80"
+
+networks:
+  datalab:
+    external: true
