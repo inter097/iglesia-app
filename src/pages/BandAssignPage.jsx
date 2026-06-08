@@ -27,7 +27,7 @@ export default function BandAssignPage() {
 
   async function fetchSongs() {
     setLoading(true)
-    const data = await getSongs('id, title, key, band')
+    const data = await getSongs()
     setSongs(data || [])
     setLoading(false)
   }

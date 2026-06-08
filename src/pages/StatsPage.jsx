@@ -12,7 +12,7 @@ export default function StatsPage() {
   useEffect(() => {
     async function fetchData() {
       const [s, ss] = await Promise.all([
-        getSongs('id, title, key, speed, band'),
+        getSongs(),
         getAllSetlistSongs(),
       ])
       setSongs(s || [])

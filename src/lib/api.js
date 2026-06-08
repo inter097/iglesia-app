@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const BASE = 'https://hub.eliuth.dev/iglesia'
+const BASE = import.meta.env.VITE_API_URL || 'https://hub.eliuth.dev/iglesia'
 
 export function useAdmin() {
   const [isAdmin, setIsAdmin] = useState(false)

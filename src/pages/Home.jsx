@@ -60,11 +60,8 @@ export default function Home() {
       setLoading(true)
     }
 
-    const fields = withContent
-      ? 'id, title, key, speed, is_mvi, band, has_error, content'
-      : 'id, title, key, speed, is_mvi, band, has_error'
     try {
-      const data = await getSongs(fields)
+      const data = await getSongs()
       setSongs(data || [])
       sessionStorage.setItem(cacheKey, JSON.stringify(data || []))
     } catch (err) {

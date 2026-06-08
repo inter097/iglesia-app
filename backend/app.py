@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://afc.eliuth.dev"])
 
 PG = dict(
     host=os.environ["POSTGRES_HOST"],
@@ -161,6 +161,7 @@ def create_setlist():
     return jsonify(setlist), 201
 
 @app.route("/iglesia/setlists/<setlist_id>/songs", methods=["POST"])
+@token_required
 def add_setlist_song(setlist_id):
     d = request.get_json()
     conn = get_db()
@@ -174,6 +175,7 @@ def add_setlist_song(setlist_id):
     return jsonify(row), 201
 
 @app.route("/iglesia/setlists/<setlist_id>/songs/<song_item_id>", methods=["DELETE"])
+@token_required
 def remove_setlist_song(setlist_id, song_item_id):
     conn = get_db()
     cur = conn.cursor()
@@ -182,6 +184,7 @@ def remove_setlist_song(setlist_id, song_item_id):
     return jsonify({"deleted": True})
 
 @app.route("/iglesia/setlists/<setlist_id>/songs/<song_item_id>", methods=["PUT"])
+@token_required
 def update_setlist_song(setlist_id, song_item_id):
     d = request.get_json()
     conn = get_db()

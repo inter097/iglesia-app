@@ -24,7 +24,7 @@ export default function AdminPage() {
 
   async function fetchSongs() {
     setLoading(true)
-    const data = await getSongs('id, title, key, speed, band')
+    const data = await getSongs()
     setSongs(data || [])
     const unique = [...new Set((data || []).map(s => s.band).filter(Boolean))].sort()
     setBands(unique)

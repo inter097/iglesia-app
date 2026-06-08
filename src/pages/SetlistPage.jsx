@@ -77,7 +77,7 @@ export default function SetlistPage() {
     try {
       const [sls, songs] = await Promise.all([
         getSetlists(),
-        getSongs('id, title, key, speed'),
+        getSongs(),
       ])
 
       setAllSongs(songs || [])
