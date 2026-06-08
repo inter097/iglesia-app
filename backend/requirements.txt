@@ -4,3 +4,4 @@ gunicorn>=21.0.0
 psycopg2-binary
 bcrypt
 PyJWT
+Flask-Limiter

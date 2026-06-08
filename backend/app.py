@@ -1,11 +1,14 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import psycopg2, psycopg2.extras, bcrypt, jwt, os
 from datetime import datetime, timedelta
 from functools import wraps
 
 app = Flask(__name__)
 CORS(app, origins=["https://afc.eliuth.dev"])
+limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
 
 PG = dict(
     host=os.environ["POSTGRES_HOST"],
@@ -37,6 +40,7 @@ def token_required(f):
 
 # ── Auth ──────────────────────────────────────────────────────────────────
 @app.route("/iglesia/auth/login", methods=["POST"])
+@limiter.limit("5 per minute; 20 per hour", error_message="Demasiados intentos, espera un momento.")
 def login():
     data = request.get_json()
     password = data.get("password", "").encode()
@@ -121,6 +125,7 @@ def delete_song(song_id):
     return jsonify({"deleted": True})
 
 @app.route("/iglesia/health", methods=["GET"])
+@limiter.exempt
 def health():
     return jsonify({"status": "ok"})
 
