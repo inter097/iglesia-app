@@ -1,12 +1,5 @@
-/**
- * api.js — capa unificada de acceso a datos
- * Usa Supabase o VPS según VITE_USE_SUPABASE
- * Para volver a Supabase: VITE_USE_SUPABASE=true en .env
- */
-import { supabase } from './supabase'
 import { useState, useEffect } from 'react'
 
-const USE_SUPABASE = false
 const BASE = 'https://hub.eliuth.dev/iglesia'
 
 export function useAdmin() {
@@ -17,7 +10,6 @@ export function useAdmin() {
   return isAdmin
 }
 
-// ── Auth helpers (VPS) ────────────────────────────────────────────────────
 function getToken() {
   return localStorage.getItem('iglesia_token')
 }
@@ -44,15 +36,7 @@ async function vpsRequest(path, options = {}) {
   return data
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────
 export async function login(password) {
-  if (USE_SUPABASE) {
-    // Supabase necesita email — usamos el almacenado en env o valor fijo
-    const email = import.meta.env.VITE_ADMIN_EMAIL || 'admin@iglesia.dev'
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw new Error('Password incorrecto')
-    return true
-  }
   const data = await vpsRequest('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -63,18 +47,10 @@ export async function login(password) {
 }
 
 export async function logout() {
-  if (USE_SUPABASE) {
-    await supabase.auth.signOut()
-  } else {
-    clearToken()
-  }
+  clearToken()
 }
 
 export async function isAuthenticated() {
-  if (USE_SUPABASE) {
-    const { data } = await supabase.auth.getSession()
-    return !!data.session
-  }
   const token = getToken()
   if (!token) return false
   try {
@@ -86,31 +62,15 @@ export async function isAuthenticated() {
   }
 }
 
-// ── Songs ─────────────────────────────────────────────────────────────────
-export async function getSongs(fields = '*') {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('songs').select(fields).order('title')
-    if (error) throw error
-    return data
-  }
+export async function getSongs() {
   return vpsRequest('/songs')
 }
 
 export async function getSong(id) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('songs').select('*').eq('id', id).single()
-    if (error) throw error
-    return data
-  }
   return vpsRequest(`/songs/${id}`)
 }
 
 export async function createSong(songData) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('songs').insert([songData]).select().single()
-    if (error) throw error
-    return data
-  }
   return vpsRequest('/songs', {
     method: 'POST',
     headers: authHeaders(),
@@ -119,11 +79,6 @@ export async function createSong(songData) {
 }
 
 export async function updateSong(id, songData) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('songs').update(songData).eq('id', id).select().single()
-    if (error) throw error
-    return data
-  }
   return vpsRequest(`/songs/${id}`, {
     method: 'PUT',
     headers: authHeaders(),
@@ -132,39 +87,18 @@ export async function updateSong(id, songData) {
 }
 
 export async function deleteSong(id) {
-  if (USE_SUPABASE) {
-    const { error } = await supabase.from('songs').delete().eq('id', id)
-    if (error) throw error
-    return true
-  }
   return vpsRequest(`/songs/${id}`, {
     method: 'DELETE',
     headers: authHeaders()
   })
 }
 
-// ── Setlists ──────────────────────────────────────────────────────────────
 export async function getSetlists() {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('setlists').select('*').order('day')
-    if (error) throw error
-    return data
-  }
   return vpsRequest('/setlists')
 }
 
 export async function getSetlistSongs(setlistId) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase
-      .from('setlist_songs')
-      .select('id, position, transpose, song:song_id(id, title, key, speed, has_error)')
-      .eq('setlist_id', setlistId)
-      .order('position')
-    if (error) throw error
-    return data
-  }
   const flat = await vpsRequest(`/setlists/${setlistId}`)
-  // Normalizar al formato que esperan los componentes
   return flat.map(r => ({
     id: r.id,
     position: r.position,
@@ -180,11 +114,6 @@ export async function getSetlistSongs(setlistId) {
 }
 
 export async function createSetlist(day) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from('setlists').insert({ day }).select().single()
-    if (error) throw error
-    return data
-  }
   return vpsRequest('/setlists', {
     method: 'POST',
     headers: authHeaders(),
@@ -193,14 +122,6 @@ export async function createSetlist(day) {
 }
 
 export async function addSongToSetlist(setlistId, songId, position, transpose = 0) {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase
-      .from('setlist_songs')
-      .insert({ setlist_id: setlistId, song_id: songId, position, transpose })
-      .select().single()
-    if (error) throw error
-    return data
-  }
   return vpsRequest(`/setlists/${setlistId}/songs`, {
     method: 'POST',
     headers: authHeaders(),
@@ -209,11 +130,6 @@ export async function addSongToSetlist(setlistId, songId, position, transpose = 
 }
 
 export async function removeSongFromSetlist(setlistId, songItemId) {
-  if (USE_SUPABASE) {
-    const { error } = await supabase.from('setlist_songs').delete().eq('id', songItemId)
-    if (error) throw error
-    return true
-  }
   return vpsRequest(`/setlists/${setlistId}/songs/${songItemId}`, {
     method: 'DELETE',
     headers: authHeaders()
@@ -221,23 +137,10 @@ export async function removeSongFromSetlist(setlistId, songItemId) {
 }
 
 export async function getAllSetlistSongs() {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase
-      .from('setlist_songs')
-      .select('song_id, setlist:setlist_id(day)')
-    if (error) throw error
-    return data
-  }
   return vpsRequest('/setlist-songs/all')
 }
 
 export async function updateSetlistSong(setlistId, songItemId, data) {
-  if (USE_SUPABASE) {
-    const { data: d, error } = await supabase
-      .from('setlist_songs').update(data).eq('id', songItemId).select().single()
-    if (error) throw error
-    return d
-  }
   return vpsRequest(`/setlists/${setlistId}/songs/${songItemId}`, {
     method: 'PUT',
     headers: authHeaders(),
