@@ -36,4 +36,5 @@ jobs:
             docker compose up -d --build --force-recreate
             sleep 10
             docker inspect iglesia-frontend --format='{{.State.Status}}' | grep -q running || (echo "Container not running" && exit 1)
-            docker exec iglesia-frontend wget -qO- http://localhost/ | grep -q 'Canciones AFC' || (echo "Health check failed" && exit 1)
+            IP=$(docker inspect iglesia-frontend --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+            curl -sf http://$IP/ | grep -q 'Canciones AFC' || (echo "Health check failed" && exit 1)
