@@ -32,15 +32,15 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/iglesia-api
-            cat > .env <<EOF
-            JWT_SECRET=${{ secrets.IGLESIA_JWT_SECRET }}
+            cat > .env <<'EOF'
             JWT_EXPIRY_HOURS=24
             POSTGRES_HOST=postgres
             POSTGRES_DB=datalab
             POSTGRES_USER=eliuth
-            POSTGRES_PASSWORD=${{ secrets.IGLESIA_DB_PASSWORD }}
-            ADMIN_PASSWORD_HASH=${{ secrets.IGLESIA_ADMIN_HASH }}
             EOF
+            printf 'JWT_SECRET=%s\n' '${{ secrets.IGLESIA_JWT_SECRET }}' >> .env
+            printf 'POSTGRES_PASSWORD=%s\n' '${{ secrets.IGLESIA_DB_PASSWORD }}' >> .env
+            printf 'ADMIN_PASSWORD_HASH=%s\n' '${{ secrets.IGLESIA_ADMIN_HASH }}' >> .env
             docker compose up -d --build --force-recreate
             sleep 8
             docker inspect iglesia-api --format='{{.State.Status}}' | grep -q running || (echo "Container not running" && exit 1)
