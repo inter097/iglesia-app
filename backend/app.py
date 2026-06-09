@@ -149,7 +149,7 @@ def get_setlist(setlist_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
-        SELECT ss.*, s.title, s.key, s.content, s.speed, s.bpm, s.is_mvi, s.is_nashville, s.band
+        SELECT ss.*, s.title, s.key, s.content, s.speed, s.bpm, s.is_mvi, s.is_nashville, s.band, s.has_error
         FROM iglesia.setlist_songs ss
         JOIN iglesia.songs s ON ss.song_id = s.id
         WHERE ss.setlist_id = %s
