@@ -248,9 +248,10 @@ export default function SetlistPage() {
     s.title.toLowerCase().includes(search.toLowerCase())
   )
 
-  const regularSongs   = currentSongs.filter(s => !s.is_post_message)
-  const postMsgSongs   = currentSongs.filter(s => s.is_post_message)
-  const isDomingo      = selectedDay === 'domingo'
+  const regularSongs    = currentSongs.filter(s => !s.is_post_message)
+  const postMsgSongs    = currentSongs.filter(s => s.is_post_message)
+  const isDomingo       = selectedDay === 'domingo'
+  const hasPostMensaje  = postMsgSongs.length > 0
 
   return (
     <div className={styles.container}>
@@ -336,7 +337,7 @@ export default function SetlistPage() {
                   </button>
                 )}
               </div>
-              {isDomingo && (
+              {isDomingo && !hasPostMensaje && (
                 <button className={styles.addPostMensajeBtn} onClick={() => setAddingPostMsg(true)}>
                   <Plus size={14} /> Post mensaje
                 </button>
