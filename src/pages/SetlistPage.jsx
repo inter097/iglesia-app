@@ -21,6 +21,45 @@ function getDefaultDay() {
   return 'miercoles'
 }
 
+function SongItem({ item, i, globalIdx, dragIdx, dragOverIdx, setDragIdx, setDragOverIdx,
+  handleDrop, handleTouchStart, handleTouchMove, handleTouchEnd,
+  didDragRef, selectedDay, navigate, removeItem, styles, isPostMessage = false }) {
+  return (
+    <div
+      key={item.id}
+      data-drag-idx={globalIdx}
+      className={`${styles.item} ${isPostMessage ? styles.itemPostMensaje : ''} ${dragOverIdx === globalIdx ? styles.dragOver : ''} ${dragIdx === globalIdx ? styles.dragging : ''}`}
+      style={dragIdx !== null ? { touchAction: 'none' } : {}}
+      draggable
+      onDragStart={() => setDragIdx(globalIdx)}
+      onDragOver={e => { e.preventDefault(); setDragOverIdx(globalIdx) }}
+      onDragLeave={() => setDragOverIdx(null)}
+      onDrop={() => handleDrop(globalIdx)}
+      onDragEnd={() => { setDragIdx(null); setDragOverIdx(null) }}
+      onTouchStart={e => handleTouchStart(e, globalIdx)}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => { if (didDragRef.current) return; sessionStorage.setItem('setlist_day', selectedDay); navigate(`/cancion/${item.song.id}?ssl=${item.id}&t=${item.transpose || 0}`, { state: { song: item.song } }) }}
+    >
+      <div className={styles.itemNum}>{isPostMessage ? '✝' : i + 1}</div>
+      <div className={styles.itemInfo}>
+        <span className={styles.itemTitle}>{item.song.title}</span>
+        <div className={styles.itemMeta}>
+          {item.song.key   && <span className={styles.tag}>{item.song.key}</span>}
+          {item.song.speed && <span className={styles.tag}>{item.song.speed}</span>}
+          {isPostMessage   && <span className={styles.postMensajeTag}>Post mensaje</span>}
+          {item.song.has_error && <AlertTriangle size={13} color="#e05555" title="Acordes con error" />}
+        </div>
+      </div>
+      <div className={styles.itemActions} onClick={e => e.stopPropagation()}>
+        <button className={styles.removeBtn} onClick={() => removeItem(item.id)}>
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function SetlistPage() {
   const { day: dayParam } = useParams()
   const [selectedDay, setSelectedDay] = useState(
@@ -38,7 +77,8 @@ export default function SetlistPage() {
   const [allSongs, setAllSongs]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
-  const [adding, setAdding]       = useState(false)
+  const [adding, setAdding]             = useState(false)
+  const [addingPostMsg, setAddingPostMsg] = useState(false)
   const [dragIdx, setDragIdx]     = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
   const touchDragRef = useRef(null)
@@ -119,14 +159,15 @@ export default function SetlistPage() {
     return Math.max(...songs.map(s => s.position ?? -1))
   }
 
-  async function addSong(song) {
+  async function addSong(song, isPostMessage = false) {
     const sl = setlists[selectedDay]
     if (!sl) return
     const maxPos = getMaxPosition(sl.songs)
     setSearch('')
     setAdding(false)
+    setAddingPostMsg(false)
     try {
-      await addSongToSetlist(sl.id, song.id, maxPos + 1)
+      await addSongToSetlist(sl.id, song.id, maxPos + 1, 0, isPostMessage)
       await refetchDay()
       fetchAll(true)
     } catch {
@@ -207,6 +248,10 @@ export default function SetlistPage() {
     s.title.toLowerCase().includes(search.toLowerCase())
   )
 
+  const regularSongs   = currentSongs.filter(s => !s.is_post_message)
+  const postMsgSongs   = currentSongs.filter(s => s.is_post_message)
+  const isDomingo      = selectedDay === 'domingo'
+
   return (
     <div className={styles.container}>
       {!selectedDay ? (
@@ -221,63 +266,57 @@ export default function SetlistPage() {
       ) : (
         <div className={styles.listWrap}>
 
-          {currentSongs.length === 0 && !adding && (
+          {currentSongs.length === 0 && !adding && !addingPostMsg && (
             <div className={styles.empty}>No hay canciones para este día</div>
           )}
 
-          {currentSongs.map((item, i) => (
-            <div
-              key={item.id}
-              data-drag-idx={i}
-              className={`${styles.item} ${dragOverIdx === i ? styles.dragOver : ''} ${dragIdx === i ? styles.dragging : ''}`}
-              style={dragIdx !== null ? { touchAction: 'none' } : {}}
-              draggable
-              onDragStart={() => setDragIdx(i)}
-              onDragOver={e => { e.preventDefault(); setDragOverIdx(i) }}
-              onDragLeave={() => setDragOverIdx(null)}
-              onDrop={() => handleDrop(i)}
-              onDragEnd={() => { setDragIdx(null); setDragOverIdx(null) }}
-              onTouchStart={e => handleTouchStart(e, i)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onClick={() => { if (didDragRef.current) return; sessionStorage.setItem('setlist_day', selectedDay); navigate(`/cancion/${item.song.id}?ssl=${item.id}&t=${item.transpose || 0}`, { state: { song: item.song } }) }}
-            >
-              <div className={styles.itemNum}>{i + 1}</div>
-              <div className={styles.itemInfo}>
-                <span className={styles.itemTitle}>{item.song.title}</span>
-                <div className={styles.itemMeta}>
-                  {item.song.key   && <span className={styles.tag}>{item.song.key}</span>}
-                  {item.song.speed && <span className={styles.tag}>{item.song.speed}</span>}
-                  {item.song.has_error && <AlertTriangle size={13} color="#e05555" title="Acordes con error" />}
-                </div>
-              </div>
-              <div className={styles.itemActions} onClick={e => e.stopPropagation()}>
-                <button className={styles.removeBtn} onClick={() => removeItem(item.id)}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            </div>
+          {/* Canciones regulares */}
+          {regularSongs.map((item, i) => (
+            <SongItem key={item.id} item={item} i={i} globalIdx={currentSongs.indexOf(item)}
+              dragIdx={dragIdx} dragOverIdx={dragOverIdx}
+              setDragIdx={setDragIdx} setDragOverIdx={setDragOverIdx}
+              handleDrop={handleDrop} handleTouchStart={handleTouchStart}
+              handleTouchMove={handleTouchMove} handleTouchEnd={handleTouchEnd}
+              didDragRef={didDragRef} selectedDay={selectedDay}
+              navigate={navigate} removeItem={removeItem} styles={styles}
+            />
           ))}
 
-          {adding ? (
+          {/* Separador + canciones post mensaje */}
+          {postMsgSongs.length > 0 && (
+            <div className={styles.postMensajeDivider}>Post mensaje</div>
+          )}
+          {postMsgSongs.map((item, i) => (
+            <SongItem key={item.id} item={item} i={i} globalIdx={currentSongs.indexOf(item)}
+              dragIdx={dragIdx} dragOverIdx={dragOverIdx}
+              setDragIdx={setDragIdx} setDragOverIdx={setDragOverIdx}
+              handleDrop={handleDrop} handleTouchStart={handleTouchStart}
+              handleTouchMove={handleTouchMove} handleTouchEnd={handleTouchEnd}
+              didDragRef={didDragRef} selectedDay={selectedDay}
+              navigate={navigate} removeItem={removeItem} styles={styles}
+              isPostMessage
+            />
+          ))}
+
+          {(adding || addingPostMsg) ? (
             <div className={styles.searchBox}>
               <div className={styles.searchRow}>
                 <Search size={14} className={styles.searchIcon} />
                 <input
                   className={styles.searchInput}
-                  placeholder="Buscar canción..."
+                  placeholder={addingPostMsg ? 'Buscar canción post mensaje...' : 'Buscar canción...'}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && filtered.length > 0 && addSong(filtered[0])}
+                  onKeyDown={e => e.key === 'Enter' && filtered.length > 0 && addSong(filtered[0], addingPostMsg)}
                   autoFocus
                 />
-                <button className={styles.cancelSearch} onClick={() => { setAdding(false); setSearch('') }}>
+                <button className={styles.cancelSearch} onClick={() => { setAdding(false); setAddingPostMsg(false); setSearch('') }}>
                   <X size={14} />
                 </button>
               </div>
               <div className={styles.searchResults}>
                 {filtered.slice(0, 10).map(song => (
-                  <button key={`${song.id}-${Math.random()}`} className={styles.resultItem} onClick={() => addSong(song)}>
+                  <button key={`${song.id}-${Math.random()}`} className={styles.resultItem} onClick={() => addSong(song, addingPostMsg)}>
                     <span className={styles.resultTitle}>{song.title}</span>
                     {song.key && <span className={styles.resultKey}>{song.key}</span>}
                   </button>
@@ -286,16 +325,23 @@ export default function SetlistPage() {
               </div>
             </div>
           ) : (
-            <div className={styles.addRow}>
-              <button className={styles.addBtn} onClick={() => setAdding(true)}>
-                <Plus size={15} /> Agregar canción
-              </button>
-              {currentSongs.length > 0 && (
-                <button className={styles.clearDayBtn} onClick={clearDay}>
-                  <Trash2 size={15} /> Vaciar día
+            <>
+              <div className={styles.addRow}>
+                <button className={styles.addBtn} onClick={() => setAdding(true)}>
+                  <Plus size={15} /> Agregar canción
+                </button>
+                {currentSongs.length > 0 && (
+                  <button className={styles.clearDayBtn} onClick={clearDay}>
+                    <Trash2 size={15} /> Vaciar día
+                  </button>
+                )}
+              </div>
+              {isDomingo && (
+                <button className={styles.addPostMensajeBtn} onClick={() => setAddingPostMsg(true)}>
+                  <Plus size={14} /> Post mensaje
                 </button>
               )}
-            </div>
+            </>
           )}
         </div>
       )}

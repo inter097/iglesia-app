@@ -2,11 +2,16 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import psycopg2, psycopg2.extras, bcrypt, jwt, os
-from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import psycopg2, psycopg2.extras, bcrypt, jwt, os, pytz
+from datetime import datetime, timedelta, date
 from functools import wraps
 
+MTY = pytz.timezone("America/Monterrey")
+
 app = Flask(__name__)
+_scheduler_started = False
 CORS(app, origins=["https://afc.eliuth.dev"])
 limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
 
@@ -172,9 +177,9 @@ def add_setlist_song(setlist_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
-        INSERT INTO iglesia.setlist_songs (setlist_id, song_id, position, transpose)
-        VALUES (%s,%s,%s,%s) RETURNING *
-    """, (setlist_id, d.get("song_id"), d.get("position", 0), d.get("transpose", 0)))
+        INSERT INTO iglesia.setlist_songs (setlist_id, song_id, position, transpose, is_post_message)
+        VALUES (%s,%s,%s,%s,%s) RETURNING *
+    """, (setlist_id, d.get("song_id"), d.get("position", 0), d.get("transpose", 0), d.get("is_post_message", False)))
     row = dict(cur.fetchone())
     conn.commit(); cur.close(); conn.close()
     return jsonify(row), 201
@@ -214,6 +219,146 @@ def get_all_setlist_songs():
     data = [dict(r) for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(data)
+
+
+# ── is_post_message ────────────────────────────────────────────────────────
+@app.route("/iglesia/setlists/<setlist_id>/songs/<song_item_id>/post-message", methods=["PUT"])
+@token_required
+def toggle_post_message(setlist_id, song_item_id):
+    d = request.get_json()
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        UPDATE iglesia.setlist_songs SET is_post_message=%s
+        WHERE id=%s AND setlist_id=%s RETURNING *
+    """, (d.get("is_post_message", False), song_item_id, setlist_id))
+    row = cur.fetchone()
+    conn.commit(); cur.close(); conn.close()
+    return jsonify(dict(row))
+
+
+# ── Snapshots ──────────────────────────────────────────────────────────────
+def take_snapshot(day: str):
+    """Congela el setlist del día como snapshot histórico."""
+    today = date.today()
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Obtener setlist del día
+        cur.execute("SELECT id FROM iglesia.setlists WHERE day=%s", (day,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close(); return
+
+        setlist_id = row["id"]
+
+        # Crear snapshot (ignorar si ya existe para esta fecha)
+        cur.execute("""
+            INSERT INTO iglesia.setlist_snapshots (day, service_date)
+            VALUES (%s, %s)
+            ON CONFLICT (day, service_date) DO NOTHING
+            RETURNING id
+        """, (day, today))
+        snap = cur.fetchone()
+        if not snap:
+            cur.close(); conn.close(); return  # Ya existía
+
+        snap_id = snap["id"]
+
+        # Copiar canciones al snapshot
+        cur.execute("""
+            SELECT song_id, position, transpose, is_post_message
+            FROM iglesia.setlist_songs WHERE setlist_id=%s ORDER BY position
+        """, (setlist_id,))
+        songs = cur.fetchall()
+        for s in songs:
+            cur.execute("""
+                INSERT INTO iglesia.setlist_snapshot_songs
+                    (snapshot_id, song_id, position, transpose, is_post_message)
+                VALUES (%s,%s,%s,%s,%s)
+            """, (snap_id, s["song_id"], s["position"], s["transpose"], s["is_post_message"]))
+
+        conn.commit()
+        print(f"[snapshot] {day} {today} — {len(songs)} canciones guardadas")
+        cur.close(); conn.close()
+    except Exception as e:
+        print(f"[snapshot] Error: {e}")
+
+
+@app.route("/iglesia/snapshots", methods=["GET"])
+def get_snapshots():
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT s.*, COUNT(ss.id) as song_count
+        FROM iglesia.setlist_snapshots s
+        LEFT JOIN iglesia.setlist_snapshot_songs ss ON ss.snapshot_id = s.id
+        GROUP BY s.id
+        ORDER BY s.service_date DESC
+    """)
+    data = [dict(r) for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(data)
+
+
+@app.route("/iglesia/snapshots/<snapshot_id>", methods=["GET"])
+def get_snapshot(snapshot_id):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT ss.*, s.title, s.key, s.speed, s.bpm, s.band
+        FROM iglesia.setlist_snapshot_songs ss
+        JOIN iglesia.songs s ON ss.song_id = s.id
+        WHERE ss.snapshot_id = %s
+        ORDER BY ss.position
+    """, (snapshot_id,))
+    data = [dict(r) for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(data)
+
+
+@app.route("/iglesia/snapshots/stats", methods=["GET"])
+def snapshot_stats():
+    """Frecuencia de canciones en el historial."""
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT s.title, s.key, s.band, snap.day,
+               COUNT(*) as veces,
+               MAX(snap.service_date) as ultima_vez
+        FROM iglesia.setlist_snapshot_songs ss
+        JOIN iglesia.songs s ON ss.song_id = s.id
+        JOIN iglesia.setlist_snapshots snap ON ss.snapshot_id = snap.id
+        GROUP BY s.id, s.title, s.key, s.band, snap.day
+        ORDER BY veces DESC
+    """)
+    data = [dict(r) for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(data)
+
+
+# ── Scheduler ─────────────────────────────────────────────────────────────
+def start_scheduler():
+    global _scheduler_started
+    if _scheduler_started:
+        return
+    _scheduler_started = True
+    scheduler = BackgroundScheduler(timezone=MTY)
+    # Domingo 10:45am
+    scheduler.add_job(lambda: take_snapshot("domingo"),
+        CronTrigger(day_of_week="sun", hour=10, minute=45, timezone=MTY))
+    # Miércoles 8:15pm
+    scheduler.add_job(lambda: take_snapshot("miercoles"),
+        CronTrigger(day_of_week="wed", hour=20, minute=15, timezone=MTY))
+    # Sábado 6:30pm
+    scheduler.add_job(lambda: take_snapshot("sabado"),
+        CronTrigger(day_of_week="sat", hour=18, minute=30, timezone=MTY))
+    scheduler.start()
+    print("[scheduler] Snapshots activados — Dom 10:45, Mié 20:15, Sáb 18:30 hora Monterrey")
+
+
+start_scheduler()  # funciona tanto con gunicorn como directo
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

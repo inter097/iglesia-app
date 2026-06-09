@@ -315,3 +315,56 @@
   text-align: center;
   border-bottom: 1px solid var(--border);
 }
+
+/* Post mensaje */
+.postMensajeDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.postMensajeDivider::before,
+.postMensajeDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.itemPostMensaje {
+  border-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg2)) !important;
+}
+
+.postMensajeTag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.addPostMensajeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px;
+  background: none;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 13px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  margin-top: 4px;
+}
+.addPostMensajeBtn:hover { opacity: 1; }

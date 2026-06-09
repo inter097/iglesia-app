@@ -103,6 +103,7 @@ export async function getSetlistSongs(setlistId) {
     id: r.id,
     position: r.position,
     transpose: r.transpose || 0,
+    is_post_message: r.is_post_message || false,
     song: {
       id: r.song_id,
       title: r.title,
@@ -121,11 +122,11 @@ export async function createSetlist(day) {
   })
 }
 
-export async function addSongToSetlist(setlistId, songId, position, transpose = 0) {
+export async function addSongToSetlist(setlistId, songId, position, transpose = 0, isPostMessage = false) {
   return vpsRequest(`/setlists/${setlistId}/songs`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ song_id: songId, position, transpose })
+    body: JSON.stringify({ song_id: songId, position, transpose, is_post_message: isPostMessage })
   })
 }
 
