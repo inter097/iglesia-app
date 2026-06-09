@@ -40,7 +40,7 @@ jobs:
             EOF
             printf 'JWT_SECRET=%s\n' '${{ secrets.IGLESIA_JWT_SECRET }}' >> .env
             printf 'POSTGRES_PASSWORD=%s\n' '${{ secrets.IGLESIA_DB_PASSWORD }}' >> .env
-            printf 'ADMIN_PASSWORD_HASH=%s\n' '${{ secrets.IGLESIA_ADMIN_HASH }}' >> .env
+            printf 'ADMIN_PASSWORD_HASH=%s\n' '${{ secrets.IGLESIA_ADMIN_HASH }}' | sed 's/\$/\$\$/g' >> .env
             docker compose up -d --build --force-recreate
             sleep 8
             docker inspect iglesia-api --format='{{.State.Status}}' | grep -q running || (echo "Container not running" && exit 1)
