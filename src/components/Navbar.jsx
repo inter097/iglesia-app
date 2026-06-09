@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X, ArrowLeft, Info } from 'lucide-react'
+import { Sun, Moon, Shield, BookOpen, Wrench, Home, Tag, BarChart2, Menu, X, ArrowLeft, Info, AlertTriangle } from 'lucide-react'
 import { isAuthenticated } from '../lib/api'
 import { useEffect, useState, useRef, useContext } from 'react'
 import { InfoPanelContext } from '../lib/infoPanelContext'
@@ -139,6 +139,9 @@ export default function Navbar({ theme, toggleTheme }) {
               </Link>
               <Link to="/asignar-bandas" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
                 <Tag size={16} /> Asignar bandas
+              </Link>
+              <Link to="/pendientes" className={styles.menuItem} onClick={() => setMenuOpen(false)}>
+                <AlertTriangle size={16} /> Pendientes
               </Link>
               <button onClick={() => { toggleDevMode(!devMode); setMenuOpen(false) }} className={styles.menuItem} title="Toggle doble-click editar">
                 <Wrench size={16} /> Dev {devMode ? '✓' : ''}

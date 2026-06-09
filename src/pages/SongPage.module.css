@@ -130,6 +130,12 @@
   color: white;
 }
 
+.toggle.errorActive {
+  background: #e05555;
+  border-color: #e05555;
+  color: white;
+}
+
 .saveMetaBtn {
   display: flex;
   align-items: center;

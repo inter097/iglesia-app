@@ -8,6 +8,7 @@ import SetlistPage from './pages/SetlistPage'
 import DevPage from './pages/DevPage'
 import BandAssignPage from './pages/BandAssignPage'
 import StatsPage from './pages/StatsPage'
+import PendientesPage from './pages/PendientesPage'
 import Navbar from './components/Navbar'
 import { InfoPanelProvider } from './lib/infoPanelContext'
 
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/dev" element={<DevPage />} />
           <Route path="/asignar-bandas" element={<BandAssignPage />} />
           <Route path="/estadisticas" element={<StatsPage />} />
+          <Route path="/pendientes" element={<PendientesPage />} />
           <Route path="/login" element={<LoginPage />} />
         </Routes>
       </InfoPanelProvider>

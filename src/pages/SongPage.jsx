@@ -373,6 +373,16 @@ export default function SongPage() {
           <button className={`${styles.toggle} ${editMode ? styles.active : ''}`} onClick={() => setEditMode(v => !v)} title="Editar letra">
             {editMode ? <Eye size={13} /> : <Pencil size={13} />}
           </button>
+
+          {isAdmin && (
+            <button
+              className={`${styles.toggle} ${song?.has_error ? styles.errorActive : ''}`}
+              onClick={toggleError}
+              title={song?.has_error ? 'Quitar marca de error' : 'Marcar para corrección'}
+            >
+              <AlertTriangle size={13} />
+            </button>
+          )}
           </div>
         </div>
       )}
