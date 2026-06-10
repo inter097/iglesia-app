@@ -205,6 +205,8 @@ def update_setlist_song(setlist_id, song_item_id):
     """, (d.get("position"), d.get("transpose", 0), song_item_id, setlist_id))
     row = cur.fetchone()
     conn.commit(); cur.close(); conn.close()
+    if not row:
+        return jsonify({"error": "No encontrada"}), 404
     return jsonify(dict(row))
 
 @app.route("/iglesia/setlist-songs/all", methods=["GET"])
@@ -234,6 +236,8 @@ def toggle_post_message(setlist_id, song_item_id):
     """, (d.get("is_post_message", False), song_item_id, setlist_id))
     row = cur.fetchone()
     conn.commit(); cur.close(); conn.close()
+    if not row:
+        return jsonify({"error": "No encontrada"}), 404
     return jsonify(dict(row))
 
 
