@@ -1,0 +1,50 @@
+name: Backup DB
+
+on:
+  schedule:
+    - cron: "30 9 * * *" # 3:30am Monterrey (UTC-6)
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Crear dump del schema iglesia en el VPS
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker exec -e PGPASSWORD='${{ secrets.IGLESIA_DB_PASSWORD }}' postgres \
+              pg_dump -U eliuth -d datalab -n iglesia > /tmp/iglesia-backup.sql
+            gzip -f /tmp/iglesia-backup.sql
+
+      - name: Descargar backup al runner
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh backup
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/backup_key
+          chmod 600 ~/.ssh/backup_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          scp -i ~/.ssh/backup_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/iglesia-backup.sql.gz" "backup/iglesia-$(date +%F).sql.gz"
+          ssh -i ~/.ssh/backup_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "rm /tmp/iglesia-backup.sql.gz"
+
+      - name: Verificar contenido del dump
+        run: |
+          gunzip -t backup/*.sql.gz
+          zcat backup/*.sql.gz | grep -q "CREATE TABLE iglesia.songs" || (echo "FALTA tabla songs" && exit 1)
+          songs=$(zcat backup/*.sql.gz | sed -n '/^COPY iglesia.songs /,/^\\\.$/p' | wc -l)
+          songs=$((songs - 2))
+          echo "Canciones en el dump: $songs"
+          test "$songs" -gt 0 || (echo "Dump sin canciones" && exit 1)
+          zcat backup/*.sql.gz | grep -c "^CREATE TABLE iglesia" | xargs echo "Tablas:"
+
+      - name: Subir artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: iglesia-db
+          path: backup/
+          retention-days: 90
+          if-no-files-found: error
